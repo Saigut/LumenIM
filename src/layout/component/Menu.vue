@@ -12,6 +12,7 @@ import {
   People
   // SmartOptimization
 } from '@icon-park/vue-next'
+import { getCurUserDisplayInfoById } from '@/utils/util_ts'
 
 defineProps({
   index: {
@@ -43,11 +44,11 @@ const menus = reactive([
     title: '通讯录',
     hotspot: computed(() => userStore.isContactApply || userStore.isGroupApply)
   },
-  {
-    link: '/note',
-    icon: markRaw(NotebookAndPen),
-    title: '笔记'
-  },
+  // {
+  //   link: '/note',
+  //   icon: markRaw(NotebookAndPen),
+  //   title: '笔记'
+  // },
   // {
   //   link: '/settings',
   //   icon: markRaw(SmartOptimization),
@@ -90,16 +91,16 @@ const isActive = (menu) => {
           <im-avatar
             class="logo"
             :size="35"
-            :src="userStore.avatar"
-            :username="userStore.nickname"
+            :src="getCurUserDisplayInfoById().avatar"
+            :username="getCurUserDisplayInfoById().displayName"
           />
         </template>
         <AccountCard />
       </n-popover>
 
-      <span class="online-status" :class="{ online: userStore.online }">
-        {{ userStore.online ? '在线' : '连接中...' }}
-      </span>
+<!--      <span class="online-status" :class="{ online: userStore.online }">-->
+<!--        {{ userStore.online ? '在线' : '连接中...' }}-->
+<!--      </span>-->
     </header>
 
     <main class="menu-main">
@@ -131,7 +132,7 @@ const isActive = (menu) => {
 
     <footer class="menu-footer">
       <div>
-        <a class="pointer" href="https://github.com/gzydong/LumenIM" target="_blank">
+        <a class="pointer" href="https://github.com/Saigut/LumenIM" target="_blank">
           <github-one theme="outline" size="22" :fill="color" :strokeWidth="2" />
         </a>
       </div>

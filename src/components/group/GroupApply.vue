@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { NModal, NForm, NFormItem, NInput } from 'naive-ui'
 import { ServeCreateGroupApply } from '@/api/group'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
 
 const remark = ref('')
 const props = defineProps({
@@ -23,23 +25,21 @@ const onMaskClick = () => {
 const onSubmit = () => {
   loading.value = true
 
-  let resp = ServeCreateGroupApply({
-    group_id: props.gid,
-    remark: remark.value
-  })
-
-  resp.then((res) => {
-    if (res.code == 200) {
-      window['$message'].success('入群申请提交成功...')
-      onMaskClick()
-    } else {
-      window['$message'].warning(res.message)
-    }
-  })
-
-  resp.finally(() => {
-    loading.value = false
-  })
+  grpcClient.umGroupJoinRequest(props.gid)
+      .then((res: gen_grpc.UmGroupJoinRequestRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          window['$message'].success('入群申请提交成功...')
+          onMaskClick()
+        } else {
+          window['$message'].warning(res.errCode)
+        }
+      })
+      .catch((err) => {
+        window['$message'].warning(err)
+        throw err
+      }).finally(() => {
+        loading.value = false
+      })
 }
 </script>
 
@@ -65,7 +65,6 @@ const onSubmit = () => {
           type="primary"
           class="mt-l15"
           :loading="loading"
-          :disabled="!remark"
           @click="onSubmit"
         >
           提交

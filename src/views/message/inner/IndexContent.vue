@@ -22,7 +22,8 @@ const talkParams = reactive({
   index_name: computed(() => dialogueStore.index_name),
   type: computed(() => dialogueStore.talk.talk_type),
   receiver_id: computed(() => dialogueStore.talk.receiver_id),
-  username: computed(() => dialogueStore.talk.username),
+  username: computed(() => dialogueStore.talk.userInfo.nickname),
+  groupName: computed(() => dialogueStore.talk.groupInfo.name),
   online: computed(() => dialogueStore.online),
   keyboard: computed(() => dialogueStore.keyboard),
   num: computed(() => dialogueStore.members.length)
@@ -57,6 +58,7 @@ const onPanelHeaderEvent = (eventType: string) => {
       <PanelHeader
         :type="talkParams.type"
         :username="talkParams.username"
+        :groupName="talkParams.groupName"
         :online="talkParams.online"
         :keyboard="talkParams.keyboard"
         :num="talkParams.num"

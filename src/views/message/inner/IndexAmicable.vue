@@ -2,7 +2,7 @@
   <div class="amicable flex-center">
     <div class="content">
       <img src="@/assets/image/welcome.svg" alt="" />
-      <p>LumenIM 欢迎您 (*^__^*)</p>
+      <p>Talk Client 欢迎您 (*^__^*)</p>
     </div>
   </div>
 </template>

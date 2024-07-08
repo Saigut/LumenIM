@@ -37,14 +37,14 @@ export function useMenu() {
       dropdown.options.push({ label: '复制', key: 'copy' })
     }
 
-    if (isRevoke(uid, item)) {
-      dropdown.options.push({ label: `撤回`, key: 'revoke' })
-    }
+    // if (isRevoke(uid, item)) {
+    //   dropdown.options.push({ label: `撤回`, key: 'revoke' })
+    // }
 
-    dropdown.options.push({ label: '回复', key: 'quote' })
-    dropdown.options.push({ label: '删除', key: 'delete' })
+    // dropdown.options.push({ label: '回复', key: 'quote' })
+    // dropdown.options.push({ label: '删除', key: 'delete' })
 
-    dropdown.options.push({ label: '多选', key: 'multiSelect' })
+    // dropdown.options.push({ label: '多选', key: 'multiSelect' })
 
     if ([3, 4, 5].includes(item.msg_type)) {
       dropdown.options.push({ label: '下载', key: 'download' })

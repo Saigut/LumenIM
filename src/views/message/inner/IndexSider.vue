@@ -8,9 +8,12 @@ import TalkItem from './TalkItem.vue'
 import Skeleton from './Skeleton.vue'
 import { ServeClearTalkUnreadNum } from '@/api/chat'
 import GroupLaunch from '@/components/group/GroupLaunch.vue'
+import UserSearchModal from '@/views/contact/inner/UserSearchModal.vue'
 import { getCacheIndexName } from '@/utils/talk'
 import { ISession } from '@/types/chat'
 import { useSessionMenu } from '@/hooks'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
 
 const {
   dropdown,
@@ -23,21 +26,24 @@ const {
 const dialogueStore = useDialogueStore()
 const talkStore = useTalkStore()
 const isShowGroup = ref(false)
+const isShowUserSearch = ref(false)
 const searchKeyword = ref('')
 const topItems = computed((): ISession[] => talkStore.topItems)
 const unreadNum = computed(() => talkStore.talkUnreadNum)
 
-const items = computed((): ISession[] => {
-  if (searchKeyword.value.length === 0) {
-    return talkStore.talkItems
-  }
+// const items = computed((): ISession[] => {
+//   if (searchKeyword.value.length === 0) {
+//     return talkStore.talkItems
+//   }
+//
+//   return talkStore.talkItems.filter((item: ISession) => {
+//     let keyword = item.remark || item.name
+//
+//     return keyword.toLowerCase().indexOf(searchKeyword.value.toLowerCase()) != -1
+//   })
+// })
 
-  return talkStore.talkItems.filter((item: ISession) => {
-    let keyword = item.remark || item.name
-
-    return keyword.toLowerCase().indexOf(searchKeyword.value.toLowerCase()) != -1
-  })
-})
+const items = ref(talkStore.talkItems)
 
 // 列表加载状态
 const loadStatus = computed(() => talkStore.loadStatus)
@@ -55,17 +61,25 @@ const onTabTalk = (item: ISession, follow = false) => {
   dialogueStore.setDialogue(item)
 
   // 清空消息未读数
-  if (item.unread_num > 0) {
-    ServeClearTalkUnreadNum({
-      talk_type: item.talk_type,
-      receiver_id: item.receiver_id
-    }).then(() => {
+  grpcClient.generalChatMarkRead(item.talk_type == 2, item.receiver_id, item.conv_msg_id)
+      .then((res: gen_grpc.ChatMarkReadRes) => {
+    if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
       talkStore.updateItem({
         index_name: item.index_name,
         unread_num: 0
       })
-    })
-  }
+    } else {
+      console.log("failed to mark read: " + res.errCode)
+    }
+  }).catch((err) => {
+    console.log("failed to mark read: " + err)
+    throw err
+  })
+
+  talkStore.updateItem({
+    index_name: item.index_name,
+    unread_num: 0
+  })
 
   // 设置滚动条跟随
   if (follow) {
@@ -127,11 +141,33 @@ onMounted(() => {
         </template>
       </n-input>
 
-      <n-button circle @click="isShowGroup = true">
+      <n-button circle @click="isShowUserSearch = true">
         <template #icon>
           <n-icon :component="Plus" />
         </template>
       </n-button>
+<!--      <n-dropdown-->
+<!--          :animated="true"-->
+<!--          trigger="hover"-->
+<!--          :show-arrow="false"-->
+<!--          @select="onToolsMenu"-->
+<!--          :options="[-->
+<!--              {-->
+<!--                label: '添加好友',-->
+<!--                key: 'add'-->
+<!--              },-->
+<!--              {-->
+<!--                label: '分组管理',-->
+<!--                key: 'group'-->
+<!--              }-->
+<!--            ]"-->
+<!--      >-->
+<!--        <n-button circle>-->
+<!--          <template #icon>-->
+<!--            <n-icon :component="Plus" />-->
+<!--          </template>-->
+<!--        </n-button>-->
+<!--      </n-dropdown>-->
     </header>
 
     <!-- 置顶栏目 -->
@@ -175,22 +211,31 @@ onMounted(() => {
     <main id="talk-session-list" class="el-main me-scrollbar me-scrollbar-thumb">
       <template v-if="loadStatus == 2"><Skeleton /></template>
       <template v-else>
-        <TalkItem
-          v-for="item in items"
-          :key="item.index_name"
-          :data="item"
-          :avatar="item.avatar"
-          :username="item.remark || item.name"
-          :active="item.index_name == indexName"
-          @tab-talk="onTabTalk"
-          @top-talk="onToTopTalk"
-          @contextmenu.prevent="onContextMenuTalk($event, item)"
-        />
+        <template v-if="items.length > 0">
+          <TalkItem
+              v-for="item in items"
+              :key="item.index_name"
+              :data="item"
+              :avatar="item.talk_type == 1 ? item.userInfo?.avatar : item.groupInfo?.avatar"
+              :username="item.talk_type == 1 ? (item.userInfo?.noteName|| item.userInfo?.nickname || item.userInfo?.username || item.name) : (item.groupInfo?.noteName || item.groupInfo?.name || item.name)"
+              :active="item.index_name == indexName"
+              @tab-talk="onTabTalk"
+              @top-talk="onToTopTalk"
+              @contextmenu.prevent="onContextMenuTalk($event, item)"
+          />
+        </template>
+        <template v-else>
+          <div>
+            <n-icon size="20"/>
+            <n-empty description="空空如也~"/>
+          </div>
+        </template>
       </template>
     </main>
   </section>
 
   <GroupLaunch v-if="isShowGroup" @close="isShowGroup = false" @on-submit="onReload" />
+  <UserSearchModal v-model:show="isShowUserSearch" />
 </template>
 
 <style lang="less" scoped>

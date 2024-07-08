@@ -16,7 +16,7 @@ defineProps<{
 <template>
   <div class="talk pointer" :class="{ actived: active }" @click="emit('tab-talk', data)">
     <div class="avatar-box">
-      <im-avatar :src="avatar" :size="34" :username="data.name" />
+      <im-avatar :src="avatar" :size="34" :username="username" />
       <div class="top-mask" @click.stop="emit('top-talk', data)">
         <n-icon :component="data.is_top == 1 ? ArrowDown : ArrowUp" />
       </div>
@@ -40,8 +40,8 @@ defineProps<{
             <span class="detail" v-html="data.draft_text" />
           </template>
           <template v-else>
-            <span class="online" v-show="data.talk_type == 1 && data.is_online == 1"> [在线] </span>
-            <span class="detail" v-html="data.msg_text" />
+<!--            <span class="online" v-show="data.talk_type == 1 && data.is_online == 1"> [在线] </span>-->
+            <span class="detail" v-html="data.content" />
           </template>
         </div>
 

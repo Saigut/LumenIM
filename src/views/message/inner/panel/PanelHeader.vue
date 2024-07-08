@@ -11,6 +11,10 @@ defineProps({
     type: String,
     default: ''
   },
+  groupName: {
+    type: String,
+    default: ''
+  },
   online: {
     type: Boolean,
     default: false
@@ -46,26 +50,26 @@ const onSetMenu = () => {
       <span class="tag" :class="{ red: type == 1 }">
         {{ type == 1 ? '好友' : '群聊' }}
       </span>
-      <span class="nickname">{{ username }}</span>
+      <span class="nickname">{{ type == 1 ? username : groupName }}</span>
       <span class="num" v-show="type == 2 && num">({{ num }})</span>
     </div>
 
     <div class="module center-module" v-if="type == 1">
-      <p class="online">
-        <span class="online-status" v-show="online"></span>
-        <span>{{ online ? '在线' : '离线' }}</span>
-      </p>
+<!--      <p class="online">-->
+<!--        <span class="online-status" v-show="online"></span>-->
+<!--        <span>{{ online ? '在线' : '离线' }}</span>-->
+<!--      </p>-->
       <p class="keyboard-status" v-show="keyboard">对方正在输入 ...</p>
     </div>
 
     <div class="module right-module">
-      <n-icon
-        v-show="type == 2"
-        :component="Announcement"
-        :size="18"
-        class="icon"
-        @click="emit('evnet', 'notice')"
-      />
+<!--      <n-icon-->
+<!--        v-show="type == 2"-->
+<!--        :component="Announcement"-->
+<!--        :size="18"-->
+<!--        class="icon"-->
+<!--        @click="emit('evnet', 'notice')"-->
+<!--      />-->
       <n-icon
         v-show="type == 2"
         :component="Peoples"

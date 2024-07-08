@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import {ref, computed, onMounted, Ref} from 'vue'
 import { NSpace, NTabs, NTab, NDropdown } from 'naive-ui'
 import { Search, Plus } from '@icon-park/vue-next'
 import MemberCard from './inner/MemberCard.vue'
@@ -8,8 +8,11 @@ import GroupManage from './inner/GroupManage.vue'
 import { ServeGetContacts, ServeDeleteContact, ServeContactGroupList } from '@/api/contact'
 import { useFriendsMenu, useEventBus, useInject } from '@/hooks'
 import { ContactConst } from '@/constant/event-bus'
-import { useTalkStore } from '@/store'
+import {createUserInfo, useDialogueStore, UserInfo, useTalkStore} from '@/store'
 import { useRouter } from 'vue-router'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
+import {setAccessToken, setMyUid} from "@/utils/auth";
 
 const router = useRouter()
 const talkStore = useTalkStore()
@@ -19,8 +22,9 @@ const isShowUserSearch = ref(false)
 const isShowGroupModal = ref(false)
 const keywords = ref('')
 const index = ref(0)
-const items = ref([])
+const items: Ref<UserInfo[]> = ref([])
 const groups: any = ref([])
+const dialogueStore = useDialogueStore()
 
 const filter: any = computed(() => {
   return items.value.filter((item: any) => {
@@ -36,23 +40,56 @@ const filter: any = computed(() => {
 })
 
 const loadContactList = () => {
-  ServeGetContacts().then((res) => {
-    if (res.code == 200) {
-      items.value = res.data.items || []
+  grpcClient.umContactGetList()
+      .then((res: gen_grpc.UmContactGetListRes) => {
+    if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+      items.value = []
+      for (const contact of res.contactList) {
+        let item: UserInfo = createUserInfo()
+        item.avatar = contact.avatar
+        item.gender = 0
+        item.group_id = 0
+        item.id = contact.uid
+        item.is_online = 1
+        item.motto = ""
+        item.nickname = contact.nickname
+        item.remark = contact.noteName
+        item.email = contact.email
+        item.isMutualContact = contact.isMutualContact
+        items.value.push(item)
+      }
+      let item = {} as any
+      item.count = items.value.length
+      item.name = "好友"
+      item.id = 0
+      item.sort = 0
+      groups.value = [ item ]
+
+    } else {
+      console.log("failed to get contact list: " + res.errCode)
     }
+  }).catch((err) => {
+    console.log("failed to get contact list: " + err)
+    throw err
   })
 }
 
 const loadContactGroupList = () => {
-  ServeContactGroupList().then((res) => {
-    if (res.code == 200) {
-      groups.value = res.data.items || []
-    }
-  })
+  // ServeContactGroupList().then((res) => {
+  //   if (res.code == 200) {
+  //     groups.value = res.data.items || []
+  //   }
+  // })
 }
 
 const onToTalk = (item: any) => {
   talkStore.toTalk(1, item.id, router)
+}
+
+const onDeleteTalk = (index_name = '') => {
+  talkStore.delItem(index_name)
+  dialogueStore.delItem(index_name);
+  dialogueStore.resetCurrentIndexName();
 }
 
 const onInfo = (item: any) => {
@@ -69,16 +106,20 @@ const onDeleteContact = (data: any) => {
     positiveText: '确定',
     negativeText: '取消',
     onPositiveClick: () => {
-      ServeDeleteContact({
-        friend_id: data.id
-      }).then(({ code, message }) => {
-        if (code == 200) {
-          window['$message'].success('删除联系人成功')
-          loadContactList()
-        } else {
-          window['$message'].error(message)
-        }
-      })
+      grpcClient.umContactDel(data.id)
+          .then((res: gen_grpc.UmContactDelRes) => {
+            if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+                window['$message'].success('删除联系人成功')
+                loadContactList()
+                onDeleteTalk(`1_${data.id}`)
+            } else {
+              window['$message'].error("删除联系人失败", gen_grpc.ErrCode[res.errCode])
+            }
+          })
+          .catch((err) => {
+            window['$message'].error("删除联系人失败", err)
+            throw err
+          })
     }
   })
 }
@@ -136,17 +177,18 @@ useEventBus([{ name: ContactConst.UpdateRemark, event: onChangeRemark }])
       </div>
       <div class="tools">
         <n-space>
-          <n-input
-            v-model:value.trim="keywords"
-            placeholder="搜索"
-            clearable
-            style="width: 200px"
-            round
-          >
-            <template #prefix>
-              <n-icon :component="Search" />
-            </template>
-          </n-input>
+<!--          <n-input-->
+<!--            v-model:value.trim="keywords"-->
+<!--            placeholder="搜索"-->
+<!--            clearable-->
+<!--            style="width: 200px"-->
+<!--            round-->
+<!--          >-->
+<!--            <template #prefix>-->
+<!--              <n-icon :component="Search" />-->
+<!--            </template>-->
+<!--          </n-input>-->
+          <div style="width: 200px"></div>
 
           <n-dropdown
             :animated="true"
@@ -158,10 +200,10 @@ useEventBus([{ name: ContactConst.UpdateRemark, event: onChangeRemark }])
                 label: '添加好友',
                 key: 'add'
               },
-              {
-                label: '分组管理',
-                key: 'group'
-              }
+              // {
+              //   label: '分组管理',
+              //   key: 'group'
+              // }
             ]"
           >
             <n-button circle>

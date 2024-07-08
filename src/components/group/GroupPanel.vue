@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { reactive, computed, watch, ref } from 'vue'
 import { NEmpty, NPopover, NPopconfirm } from 'naive-ui'
-import { useUserStore } from '@/store'
+import {useEntityInfoStore, UserInfo, useUserStore} from '@/store'
 import GroupLaunch from './GroupLaunch.vue'
 import GroupManage from './manage/index.vue'
 import { Comment, Search, Close, Plus } from '@icon-park/vue-next'
@@ -12,6 +12,8 @@ import {
   ServeUpdateGroupCard
 } from '@/api/group'
 import { useInject } from '@/hooks'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
 
 const userStore = useUserStore()
 const { showUserInfoModal } = useInject()
@@ -35,24 +37,27 @@ const isShowManage = ref(false)
 const state = reactive({
   keywords: '',
   detail: {
+    id: 0,
     avatar: '',
     name: '',
     profile: '',
     visit_card: '',
-    notice: ''
+    notice: '',
+    owner_id: 0,
   },
   remark: ''
 })
 
-const members = ref<any[]>([])
+const members = ref<UserInfo[]>([])
 
 const search = computed<any[]>(() => {
   if (state.keywords) {
+    const keywordRegex = new RegExp(state.keywords, 'i');
     return members.value.filter((item: any) => {
       return (
-        item.nickname.match(state.keywords) != null || item.remark.match(state.keywords) != null
-      )
-    })
+          item.nickname?.match(keywordRegex) != null || item.noteName?.match(keywordRegex) != null || item.username?.match(keywordRegex) != null
+      );
+    });
   }
 
   return members.value
@@ -60,13 +65,13 @@ const search = computed<any[]>(() => {
 
 const isLeader = computed(() => {
   return members.value.some((item: any) => {
-    return item.user_id == userStore.uid && item.leader >= 1
+    return item.id == userStore.uid && state.detail.owner_id == userStore.uid
   })
 })
 
 const isAdmin = computed(() => {
   return members.value.some((item: any) => {
-    return item.user_id == userStore.uid && item.leader == 2
+    return item.id == userStore.uid && (state.detail.owner_id == userStore.uid || item.leader == 2)
   })
 })
 
@@ -77,42 +82,57 @@ const onShowManage = (vallue: any) => {
 const onGroupCallBack = () => {}
 
 const onToInfo = (item: any) => {
-  showUserInfoModal(item.user_id)
+  showUserInfoModal(item.id)
 }
 
 /**
  * 加载群信息
  */
 function loadDetail() {
-  ServeGroupDetail({
-    group_id: props.gid
-  }).then((res) => {
-    if (res.code == 200) {
-      let result = res.data
-      state.detail.avatar = result.avatar
-      state.detail.name = result.group_name
-      state.detail.profile = result.profile
-      state.detail.visit_card = result.visit_card
-      state.remark = result.visit_card
-
-      if (result.notice) {
-        state.detail.notice = result.notice
-      }
-    }
-  })
+  grpcClient.umGroupGetInfo(props.gid)
+      .then((res: gen_grpc.UmGroupGetInfoRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          state.detail.id = res.groupInfo.groupId
+          state.detail.avatar = res.groupInfo.avatar
+          state.detail.name = res.groupInfo.groupName
+          state.detail.owner_id = res.groupInfo.ownerUid
+          state.detail.profile = ""
+          state.detail.visit_card = ""
+          state.remark = ""
+          state.detail.notice = ""
+          useEntityInfoStore().fetchGroupInfo(props.gid)
+        } else {
+          console.log("umGroupGetInfo failed:", res.errCode)
+        }
+      })
+      .catch((err) => {
+        console.log("umGroupGetInfo err:", err)
+        throw err
+      })
 }
 
 /**
  * 加载成员列表
  */
 function loadMembers() {
-  ServeGetGroupMembers({
-    group_id: props.gid
-  }).then((res) => {
-    if (res.code == 200) {
-      members.value = res.data.items || []
-    }
-  })
+  grpcClient.umGroupGetMemList(props.gid)
+      .then((res: gen_grpc.UmGroupGetMemListRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          res.memUidList.forEach((uid: number) => {
+            const ret = useEntityInfoStore().getUserById(uid);
+            if (ret.isNew) {
+              useEntityInfoStore().fetchUserInfo(uid)
+            }
+            members.value.push(ret.userInfo)
+          })
+        } else {
+          console.log("umGroupGetInfo failed:", res.errCode)
+        }
+      })
+      .catch((err) => {
+        console.log("umGroupGetInfo err:", err)
+        throw err
+      })
 }
 
 const onClose = () => {
@@ -171,37 +191,42 @@ loadMembers()
       <div class="info-box">
         <div class="b-box">
           <div class="block">
-            <div class="title">群名称：</div>
+            <div class="title">群名称：<span class="describe">{{ state.detail.name }}</span></div>
           </div>
-          <div class="describe">{{ state.detail.name }}</div>
+<!--          <div class="describe">{{ state.detail.name }}</div>-->
         </div>
-
         <div class="b-box">
           <div class="block">
-            <div class="title">群名片：</div>
-            <div class="text">
-              <n-popover trigger="click" placement="left" ref="editCardPopover">
-                <template #trigger>
-                  <n-button type="primary" text> 设置 </n-button>
-                </template>
-
-                <template #header> 设置我的群名片 </template>
-
-                <div style="display: flex">
-                  <n-input
-                    type="text"
-                    placeholder="设置我的群名片"
-                    maxlength="10"
-                    v-model:value="state.remark"
-                    @keydown.enter="onChangeRemark"
-                  />
-                  <n-button type="primary" class="mt-l5" @click="onChangeRemark"> 确定 </n-button>
-                </div>
-              </n-popover>
-            </div>
+            <div class="title">群ID：{{ state.detail.id }}</div>
           </div>
-          <div class="describe">{{ state.detail.visit_card || '未设置' }}</div>
         </div>
+
+<!--        <div class="b-box">-->
+<!--          <div class="block">-->
+<!--            <div class="title">群名片：</div>-->
+<!--            <div class="text">-->
+<!--              <n-popover trigger="click" placement="left" ref="editCardPopover">-->
+<!--                <template #trigger>-->
+<!--                  <n-button type="primary" text> 设置 </n-button>-->
+<!--                </template>-->
+
+<!--                <template #header> 设置我的群名片 </template>-->
+
+<!--                <div style="display: flex">-->
+<!--                  <n-input-->
+<!--                    type="text"-->
+<!--                    placeholder="设置我的群名片"-->
+<!--                    maxlength="10"-->
+<!--                    v-model:value="state.remark"-->
+<!--                    @keydown.enter="onChangeRemark"-->
+<!--                  />-->
+<!--                  <n-button type="primary" class="mt-l5" @click="onChangeRemark"> 确定 </n-button>-->
+<!--                </div>-->
+<!--              </n-popover>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="describe">{{ state.detail.visit_card || '未设置' }}</div>-->
+<!--        </div>-->
 
         <div class="b-box">
           <div class="block">
@@ -211,24 +236,24 @@ loadMembers()
           <div class="describe">群主已开启“新成员入群可查看所有聊天记录</div>
         </div>
 
-        <div class="b-box">
-          <div class="block">
-            <div class="title">群简介：</div>
-          </div>
-          <div class="describe">
-            {{ state.detail.profile ? state.detail.profile : '暂无群简介' }}
-          </div>
-        </div>
+<!--        <div class="b-box">-->
+<!--          <div class="block">-->
+<!--            <div class="title">群简介：</div>-->
+<!--          </div>-->
+<!--          <div class="describe">-->
+<!--            {{ state.detail.profile ? state.detail.profile : '暂无群简介' }}-->
+<!--          </div>-->
+<!--        </div>-->
 
-        <div class="b-box">
-          <div class="block">
-            <div class="title">群公告：</div>
-            <div class="text">
-              <n-button type="primary" text> 更多 </n-button>
-            </div>
-          </div>
-          <div class="describe">暂无群公告</div>
-        </div>
+<!--        <div class="b-box">-->
+<!--          <div class="block">-->
+<!--            <div class="title">群公告：</div>-->
+<!--            <div class="text">-->
+<!--              <n-button type="primary" text> 更多 </n-button>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="describe">暂无群公告</div>-->
+<!--        </div>-->
       </div>
 
       <div class="member-box">
@@ -279,7 +304,7 @@ loadMembers()
     </main>
 
     <footer class="el-footer footer bdr-t">
-      <template v-if="!isAdmin">
+      <template v-if="state.detail.id != 0 && !isAdmin">
         <n-popconfirm negative-text="取消" positive-text="确定" @positive-click="onSignOut">
           <template #trigger>
             <n-button class="btn" type="error" ghost> 退出群聊 </n-button>
@@ -307,7 +332,7 @@ loadMembers()
     @on-submit="onGroupCallBack"
   />
 
-  <GroupManage v-if="isShowManage" :gid="gid" @close="onShowManage(false)" />
+  <GroupManage v-if="isShowManage" :gid="gid" :groupState="state" @close="onShowManage(false)" />
 </template>
 <style lang="less" scoped>
 .section {

@@ -29,7 +29,7 @@ const settingsStore = useSettingsStore()
     </section>
   </section>
 
-  <Sponsor />
+<!--  <Sponsor />-->
 </template>
 <style lang="less" scoped>
 .container {

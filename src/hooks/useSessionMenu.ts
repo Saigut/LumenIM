@@ -17,6 +17,8 @@ import { useDialogueStore, useTalkStore } from '@/store'
 import { ServeSecedeGroup } from '@/api/group'
 import { ServeDeleteContact, ServeEditContactRemark } from '@/api/contact'
 import { NInput } from 'naive-ui'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
 
 interface IDropdown {
   options: any[]
@@ -57,24 +59,24 @@ export function useSessionMenu() {
         key: 'info'
       })
 
-      options.push({
-        icon: renderIcon(EditTwo),
-        label: '修改备注',
-        key: 'remark'
-      })
+      // options.push({
+      //   icon: renderIcon(EditTwo),
+      //   label: '修改备注',
+      //   key: 'remark'
+      // })
     }
 
-    options.push({
-      icon: renderIcon(item.is_top ? ArrowDown : ArrowUp),
-      label: item.is_top ? '取消置顶' : '会话置顶',
-      key: 'top'
-    })
+    // options.push({
+    //   icon: renderIcon(item.is_top ? ArrowDown : ArrowUp),
+    //   label: item.is_top ? '取消置顶' : '会话置顶',
+    //   key: 'top'
+    // })
 
-    options.push({
-      icon: renderIcon(item.is_disturb ? Remind : CloseRemind),
-      label: item.is_disturb ? '关闭免打扰' : '开启免打扰',
-      key: 'disturb'
-    })
+    // options.push({
+    //   icon: renderIcon(item.is_disturb ? Remind : CloseRemind),
+    //   label: item.is_disturb ? '关闭免打扰' : '开启免打扰',
+    //   key: 'disturb'
+    // })
 
     options.push({
       icon: renderIcon(Clear),
@@ -89,11 +91,11 @@ export function useSessionMenu() {
         key: 'delete_contact'
       })
     } else {
-      options.push({
-        icon: renderIcon(Logout),
-        label: '退出群聊',
-        key: 'signout_group'
-      })
+      // options.push({
+      //   icon: renderIcon(Logout),
+      //   label: '退出群聊',
+      //   key: 'signout_group'
+      // })
     }
 
     dropdown.options = [...options]
@@ -114,8 +116,9 @@ export function useSessionMenu() {
 
   const onDeleteTalk = (index_name = '') => {
     talkStore.delItem(index_name)
-
-    index_name === indexName.value && dialogueStore.$reset()
+    dialogueStore.delItem(index_name);
+    dialogueStore.resetCurrentIndexName();
+    // index_name === indexName.value && dialogueStore.$reset()
   }
 
   const onUserInfo = (item: ISession) => {
@@ -124,13 +127,14 @@ export function useSessionMenu() {
 
   // 移除会话
   const onRemoveTalk = (item: ISession) => {
-    ServeDeleteTalkList({
-      list_id: item.id
-    }).then(({ code }) => {
-      if (code == 200) {
-        onDeleteTalk(item.index_name)
-      }
-    })
+    onDeleteTalk(item.index_name)
+    // ServeDeleteTalkList({
+    //   list_id: item.id
+    // }).then(({ code }) => {
+    //   if (code == 200) {
+    //     onDeleteTalk(item.index_name)
+    //   }
+    // })
   }
 
   // 设置消息免打扰
@@ -184,16 +188,19 @@ export function useSessionMenu() {
       positiveText: '确定',
       negativeText: '取消',
       onPositiveClick: () => {
-        ServeDeleteContact({
-          friend_id: item.receiver_id
-        }).then(({ code, message }) => {
-          if (code == 200) {
-            window['$message'].success('删除联系人成功')
-            onDeleteTalk(item.index_name)
-          } else {
-            window['$message'].error(message)
-          }
-        })
+        grpcClient.umContactDel(item.receiver_id)
+            .then((res: gen_grpc.UmContactDelRes) => {
+              if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+                window['$message'].success('删除联系人成功')
+                onDeleteTalk(item.index_name)
+              } else {
+                window['$message'].error("删除联系人失败", gen_grpc.ErrCode[res.errCode])
+              }
+            })
+            .catch((err) => {
+              window['$message'].error("删除联系人失败", err)
+              throw err
+            })
       }
     })
   }
@@ -207,16 +214,29 @@ export function useSessionMenu() {
       positiveText: '确定',
       negativeText: '取消',
       onPositiveClick: () => {
-        ServeSecedeGroup({
-          group_id: item.receiver_id
-        }).then(({ code, message }) => {
-          if (code == 200) {
-            window['$message'].success('已退出群聊')
-            onDeleteTalk(item.index_name)
-          } else {
-            window['$message'].error(message)
-          }
-        })
+        grpcClient.umGroupLeave(item.receiver_id)
+            .then((res: gen_grpc.UmGroupLeaveRes) => {
+              if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+                window['$message'].success('已退出群聊')
+                onDeleteTalk(item.index_name)
+              } else {
+                window['$message'].error("操作失败：", gen_grpc.ErrCode[res.errCode])
+              }
+            })
+            .catch((err) => {
+              window['$message'].error("请求失败", err)
+              throw err
+            })
+        // ServeSecedeGroup({
+        //   group_id: item.receiver_id
+        // }).then(({ code, message }) => {
+        //   if (code == 200) {
+        //     window['$message'].success('已退出群聊')
+        //     onDeleteTalk(item.index_name)
+        //   } else {
+        //     window['$message'].error(message)
+        //   }
+        // })
       }
     })
   }

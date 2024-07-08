@@ -14,6 +14,10 @@ import Editor from '@/components/editor/Editor.vue'
 import MultiSelectFooter from './MultiSelectFooter.vue'
 import HistoryRecord from '@/components/talk/HistoryRecord.vue'
 import { ServeUploadImage } from '@/api/upload'
+import grpcClient from "@/grpc-client";
+import { gen_grpc } from "@/gen_grpc/api";
+import { setAccessToken, setMyUid } from "@/utils/auth";
+import { generateRandomNumberWithTimestamp } from "@/utils/util_ts";
 
 const talkStore = useTalkStore()
 const editorStore = useEditorStore()
@@ -57,17 +61,21 @@ const onSendMessage = (data = {}, callBack: any) => {
     }
   }
 
-  ServePublishMessage(message)
-    .then(({ code, message }) => {
-      if (code == 200) {
-        callBack(true)
-      } else {
-        window['$message'].warning(message)
-      }
-    })
-    .catch(() => {
-      window['$message'].warning('网络繁忙,请稍后重试!')
-    })
+  const isGroupMsg: boolean = message.receiver.talk_type == 2
+
+  grpcClient.generalChatSendMsg(isGroupMsg, message.receiver.receiver_id,
+      message.content, generateRandomNumberWithTimestamp(Date.now()))
+      .then((res: gen_grpc.ChatSendMsgRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          callBack(true)
+        } else {
+          window['$message'].warning('发送失败：' + gen_grpc.ErrCode[res.errCode])
+        }
+      })
+      .catch((err) => {
+        window['$message'].warning('网络繁忙,请稍后重试! ' + err)
+        throw err
+      })
 }
 
 // 发送文本消息

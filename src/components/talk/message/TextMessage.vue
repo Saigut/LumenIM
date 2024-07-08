@@ -27,13 +27,13 @@ textContent = textReplaceEmoji(textContent)
   <div
     class="im-message-text"
     :class="{
-      left: float == 'left',
-      right: float == 'right',
+      left: data.float == 'left',
+      right: data.float == 'right',
       maxwidth: maxWidth,
       'radius-reset': source != 'panel'
     }"
   >
-    <pre v-html="textContent" />
+    <pre v-html="textContent || ''" />
   </div>
 </template>
 
@@ -72,7 +72,7 @@ textContent = textReplaceEmoji(textContent)
 
     :deep(.emoji) {
       vertical-align: text-bottom;
-      margin: 0 5px;
+      margin: 0;
     }
 
     :deep(a) {

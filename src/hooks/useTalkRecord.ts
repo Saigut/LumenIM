@@ -11,10 +11,10 @@ interface Params {
   limit: number
 }
 
-export const useTalkRecord = (uid: number) => {
+export const useTalkRecord = (uid: number, talk_type: number, receiver_id: number) => {
   const dialogueStore = useDialogueStore()
 
-  const records = computed((): ITalkRecord[] => dialogueStore.records)
+const records = computed((): ITalkRecord[] => dialogueStore.records)
 
   const location = reactive({
     msgid: '',
@@ -76,7 +76,7 @@ export const useTalkRecord = (uid: number) => {
       limit: 30
     }
 
-    loadConfig.status = 0
+    loadConfig.status = 2
 
     let scrollHeight = 0
     const el = document.getElementById('imChatPanel')
@@ -84,10 +84,10 @@ export const useTalkRecord = (uid: number) => {
       scrollHeight = el.scrollHeight
     }
 
-    const { data, code } = await ServeTalkRecords(request)
-    if (code != 200) {
-      return (loadConfig.status = 1)
-    }
+    // const { data, code } = await ServeTalkRecords(request)
+    // if (code != 200) {
+    //   return (loadConfig.status = 1)
+    // }
 
     // 防止对话切换过快，数据渲染错误
     if (
@@ -97,18 +97,18 @@ export const useTalkRecord = (uid: number) => {
       return (location.msgid = '')
     }
 
-    const items = (data.items || []).map((item: ITalkRecord) => formatTalkRecord(uid, item))
+    // const items = (data.items || []).map((item: ITalkRecord) => formatTalkRecord(uid, item))
 
     if (request.cursor == 0) {
       // 判断是否是初次加载
       dialogueStore.clearDialogueRecord()
     }
 
-    dialogueStore.unshiftDialogueRecord(items.reverse())
+    // dialogueStore.unshiftDialogueRecord(items.reverse())
 
-    loadConfig.status = items.length >= request.limit ? 1 : 2
+    // loadConfig.status = items.length >= request.limit ? 1 : 2
 
-    loadConfig.cursor = data.cursor
+    // loadConfig.cursor = data.cursor
 
     nextTick(() => {
       const el = document.getElementById('imChatPanel')

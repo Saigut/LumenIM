@@ -48,7 +48,7 @@ defineProps({
         <span v-show="isQiye" class="badge">企业</span>
       </div>
 
-      <div class="flags text-ellipsis">{{ motto || '...' }}</div>
+      <div class="flags text-ellipsis">{{ motto }}</div>
 
       <div class="helper">
         <div class="status">{{ flag }}</div>

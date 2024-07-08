@@ -53,15 +53,15 @@ const toPermission = () => {
         </div>
       </div>
 
-      <div class="view-list">
-        <div class="content">
-          <div class="name">推送键盘输入消息</div>
-          <div class="desc">推送键盘输入消息：{{ isKeyboard ? '已开启' : '已关闭' }}</div>
-        </div>
-        <div class="tools">
-          <n-switch size="medium" v-model:value="isKeyboard" />
-        </div>
-      </div>
+<!--      <div class="view-list">-->
+<!--        <div class="content">-->
+<!--          <div class="name">推送键盘输入消息</div>-->
+<!--          <div class="desc">推送键盘输入消息：{{ isKeyboard ? '已开启' : '已关闭' }}</div>-->
+<!--        </div>-->
+<!--        <div class="tools">-->
+<!--          <n-switch size="medium" v-model:value="isKeyboard" />-->
+<!--        </div>-->
+<!--      </div>-->
 
       <div class="view-list">
         <div class="content">

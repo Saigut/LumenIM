@@ -24,3 +24,5 @@ makefile
 *.njsproj
 *.sln
 *.sw?
+
+*.bak

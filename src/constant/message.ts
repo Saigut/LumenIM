@@ -13,6 +13,7 @@ export const ChatMsgTypeMixed = 12 // 混合消息
 export const ChatMsgTypeGroupNotice = 13 // 群公告消息
 
 export const ChatMsgSysText = 1000 // 系统文本消息
+export const ChatMsgSysContactAdded = 1051 // 已添加好友
 export const ChatMsgSysGroupCreate = 1101 // 创建群聊消息
 export const ChatMsgSysGroupMemberJoin = 1102 // 加入群聊消息
 export const ChatMsgSysGroupMemberQuit = 1103 // 群成员退出群消息
@@ -70,12 +71,13 @@ export const MessageComponents = {
   [ChatMsgTypeMixed]: 'mixed-message',
   [ChatMsgTypeGroupNotice]: 'group-notice-message',
   [ChatMsgSysText]: 'sys-text-message',
+  [ChatMsgSysContactAdded]: 'sys-contact-added-message',
   [ChatMsgSysGroupCreate]: 'sys-group-create-message',
   [ChatMsgSysGroupMemberJoin]: 'sys-group-join-message',
   [ChatMsgSysGroupMemberQuit]: 'sys-group-member-quit-message',
   [ChatMsgSysGroupMemberKicked]: 'sys-group-member-kicked-message',
   // [ChatMsgSysGroupMessageRevoke]: '[撤回消息]',
-  // [ChatMsgSysGroupDismissed]: '[群解散消息]',
+  [ChatMsgSysGroupDismissed]: 'sys-group-dismissed-message',
   [ChatMsgSysGroupMuted]: 'sys-group-muted-message',
   [ChatMsgSysGroupCancelMuted]: 'sys-group-cancel-muted-message',
   [ChatMsgSysGroupMemberMuted]: 'sys-group-member-muted-message',

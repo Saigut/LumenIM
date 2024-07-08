@@ -3,16 +3,15 @@ import { isElectronMode } from '@/utils/common'
 </script>
 
 <template>
-  <div id="logo-name" v-if="!isElectronMode()">Lumen IM</div>
+  <div id="logo-name" v-if="!isElectronMode()">Talk Client</div>
 
   <section class="section">
     <router-view />
   </section>
 
   <div class="copyright">
-    <span>©2020 - 2023 Lumen IM 在线聊天</span>
-    <span><a href="http://beian.miit.gov.cn" target="_blank">黔ICP备20006767号-2</a></span>
-    <span>Github源码</span>
+    <span>©2020 - 2024 Talk Client</span>
+<!--    <span>Github源码</span>-->
   </div>
 
   <div class="fly-box">

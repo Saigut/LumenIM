@@ -6,7 +6,7 @@
 export function formatTime(datetime) {
   if (datetime == null) return ''
 
-  datetime = datetime.replace(/-/g, '/')
+  // datetime = datetime.replace(/-/g, '/')
 
   let time = new Date()
   let outTime = new Date(datetime)
@@ -75,7 +75,7 @@ export function parseTime(time, cFormat) {
       time = time * 1000
     }
 
-    date = new Date(time.replace(/-/g, '/'))
+    date = new Date(time)
   }
 
   const formatObj = {
@@ -111,7 +111,7 @@ export function beautifyTime(datetime = '') {
     return ''
   }
 
-  datetime = datetime.replace(/-/g, '/')
+  // datetime = datetime.replace(/-/g, '/')
 
   let time = new Date()
   let outTime = new Date(datetime)

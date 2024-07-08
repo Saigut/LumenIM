@@ -3,7 +3,7 @@ import { ref, computed, reactive, nextTick, inject } from 'vue'
 import { NSpace, NDropdown, NCheckbox } from 'naive-ui'
 import { Search, Plus } from '@icon-park/vue-next'
 import GroupLaunch from '../GroupLaunch.vue'
-import { useUserStore } from '@/store'
+import {createGroupInfo, useEntityInfoStore, UserInfo, useUserStore} from '@/store'
 import { StateDropdown } from '@/types/global'
 import { useInject } from '@/hooks'
 
@@ -14,18 +14,22 @@ import {
   ServeGroupHandover,
   ServeGroupNoSpeak
 } from '@/api/group'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
+import {setAccessToken, setMyUid} from "@/utils/auth";
 
 const emit = defineEmits(['close'])
-const props = defineProps({
-  id: {
-    type: Number,
-    default: 0
-  }
-})
+
+interface Props {
+  id: number;
+  groupState: any;
+}
+const props = defineProps<Props>();
 
 interface Item {
   user_id: number
   avatar: string
+  username: string
   nickname: string
   gender: number
   remark: string
@@ -52,7 +56,7 @@ const filterSearch = computed(() => {
   }
 
   return items.value.filter((item: any) => {
-    return item.nickname.match(keywords.value) != null || item.remark.match(keywords.value) != null
+    return item.nickname.match(keywords.value) != null || item.remark.match(keywords.value) != null || item.username.match(keywords.value) != null
   })
 })
 
@@ -71,19 +75,36 @@ const dropdown = reactive<StateDropdown>({
 })
 
 const onLoadData = () => {
-  ServeGetGroupMembers({
-    group_id: props.id
-  }).then((res) => {
-    if (res.code == 200) {
-      let data = res.data.items || []
-
-      data.forEach((item: Item) => {
-        item.is_delete = false
+  grpcClient.umGroupGetMemList(props.id)
+      .then((res: gen_grpc.UmGroupGetMemListRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          items.value = []
+          res.memUidList.forEach((uid: number) => {
+            const ret = useEntityInfoStore().getUserById(uid);
+            if (ret.isNew) {
+              useEntityInfoStore().fetchUserInfo(uid)
+            }
+            let item: Item = {
+              user_id: uid,
+              avatar: ret.userInfo.avatar,
+              username: ret.userInfo.username,
+              nickname: ret.userInfo.nickname,
+              gender: ret.userInfo.gender,
+              remark: ret.userInfo.remark,
+              is_mute: 0,
+              leader: props.groupState.detail.owner_id == uid ? 2 : 0,
+              is_delete: false
+            }
+            items.value.push(item)
+          })
+        } else {
+          console.log("umGroupGetInfo failed:", res.errCode)
+        }
       })
-
-      items.value = data
-    }
-  })
+      .catch((err) => {
+        console.log("umGroupGetInfo err:", err)
+        throw err
+      })
 }
 
 const onDelete = (item: Item) => {
@@ -95,15 +116,19 @@ const onDelete = (item: Item) => {
     positiveText: '确定',
     negativeText: '取消',
     onPositiveClick: () => {
-      ServeRemoveMembersGroup({
-        group_id: props.id,
-        members_ids: `${item.user_id}`
-      }).then((res) => {
-        if (res.code == 200) {
-          onLoadData()
-          window['$message'].success('删除成功')
-        }
-      })
+      grpcClient.umGroupDelMem(props.id, item.user_id)
+          .then((res: gen_grpc.SessUserLoginRes) => {
+            if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+              onLoadData()
+              window['$message'].success('删除成功')
+            } else {
+              window['$message'].warning('删除失败：' + gen_grpc.ErrCode[res.errCode])
+            }
+          })
+          .catch((err) => {
+            window['$message'].warning('请求失败：' + gen_grpc.ErrCode[err])
+            throw err
+          })
     }
   })
 }
@@ -245,29 +270,29 @@ const onContextMenu = (e: any, item: Item) => {
       label: '查看成员',
       key: 'info'
     },
-    {
-      label: item.is_mute ? '解除禁言' : '禁止发言',
-      key: 'forbidden'
-    },
+    // {
+    //   label: item.is_mute ? '解除禁言' : '禁止发言',
+    //   key: 'forbidden'
+    // },
     {
       label: '删除成员',
       key: 'delete'
     },
-    {
-      label: '批量删除',
-      key: 'batch_delete'
-    }
+    // {
+    //   label: '批量删除',
+    //   key: 'batch_delete'
+    // }
   ]
 
-  if (isAdmin.value) {
-    dropdown.options.push({ label: '转让群主', key: 'transfer' })
-
-    if (item.leader == 1) {
-      dropdown.options.push({ label: '管理权限(解除)', key: 'assignment' })
-    } else if (item.leader == 0) {
-      dropdown.options.push({ label: '管理权限(分配)', key: 'assignment' })
-    }
-  }
+  // if (isAdmin.value) {
+  //   dropdown.options.push({ label: '转让群主', key: 'transfer' })
+  //
+  //   if (item.leader == 1) {
+  //     dropdown.options.push({ label: '管理权限(解除)', key: 'assignment' })
+  //   } else if (item.leader == 0) {
+  //     dropdown.options.push({ label: '管理权限(分配)', key: 'assignment' })
+  //   }
+  // }
 
   nextTick(() => {
     dropdown.show = true
@@ -315,11 +340,11 @@ onLoadData()
             </template>
           </n-input>
 
-          <n-button circle @click="isGroupLaunch = true">
-            <template #icon>
-              <n-icon :component="Plus" />
-            </template>
-          </n-button>
+<!--          <n-button circle @click="isGroupLaunch = true">-->
+<!--            <template #icon>-->
+<!--              <n-icon :component="Plus" />-->
+<!--            </template>-->
+<!--          </n-button>-->
         </n-space>
       </div>
     </header>

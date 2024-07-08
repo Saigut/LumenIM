@@ -2,6 +2,9 @@
 import { reactive } from 'vue'
 import { NForm, NFormItem, NSwitch, NPopconfirm } from 'naive-ui'
 import { ServeDismissGroup, ServeMuteGroup, ServeGroupDetail, ServeOvertGroup } from '@/api/group'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
+import {setAccessToken, setMyUid} from "@/utils/auth";
 
 const emit = defineEmits(['close'])
 const props = defineProps({
@@ -29,13 +32,18 @@ const onLoadData = async () => {
 }
 
 const onDismiss = async () => {
-  const { code, message } = await ServeDismissGroup({ group_id: props.id })
 
-  if (code === 200) {
-    emit('close')
-    window['$message'].success('群聊已解散')
-  } else {
-    window['$message'].info(message)
+  try {
+    const res: gen_grpc.UmGroupDeleteRes = await grpcClient.umGroupDelete(props.id);
+    if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+      emit('close')
+      window['$message'].success('群聊已解散')
+    } else {
+      window['$message'].warning('操作失败：' + gen_grpc.ErrCode[res.errCode])
+    }
+  } catch (error) {
+    window['$message'].info("请求失败：", error)
+    throw error;
   }
 }
 
@@ -95,23 +103,23 @@ onLoadData()
             确定要解散群聊吗？ 此操作是不可逆的！
           </n-popconfirm>
         </n-form-item>
-        <n-form-item label="公开可见:" feedback="开启后可在公开群聊列表展示。">
-          <n-switch
-            :rubber-band="false"
-            :value="detail.is_overt"
-            :loading="detail.overt_loading"
-            @update:value="onOvert"
-          />
-        </n-form-item>
+<!--        <n-form-item label="公开可见:" feedback="开启后可在公开群聊列表展示。">-->
+<!--          <n-switch-->
+<!--            :rubber-band="false"-->
+<!--            :value="detail.is_overt"-->
+<!--            :loading="detail.overt_loading"-->
+<!--            @update:value="onOvert"-->
+<!--          />-->
+<!--        </n-form-item>-->
 
-        <n-form-item label="全员禁言:" feedback="开启后除群主和管理员以外，其它成员禁止发言。">
-          <n-switch
-            :rubber-band="false"
-            :value="detail.is_mute"
-            :loading="detail.mute_loading"
-            @update:value="onMute"
-          />
-        </n-form-item>
+<!--        <n-form-item label="全员禁言:" feedback="开启后除群主和管理员以外，其它成员禁止发言。">-->
+<!--          <n-switch-->
+<!--            :rubber-band="false"-->
+<!--            :value="detail.is_mute"-->
+<!--            :loading="detail.mute_loading"-->
+<!--            @update:value="onMute"-->
+<!--          />-->
+<!--        </n-form-item>-->
       </n-form>
     </main>
   </section>

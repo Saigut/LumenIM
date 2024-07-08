@@ -3,12 +3,14 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { NSpace, NDrawer, NTabs, NTab } from 'naive-ui'
 import { ServeGetGroups } from '@/api/group'
 import { Search, Plus } from '@icon-park/vue-next'
-import { useUserStore, useTalkStore } from '@/store'
+import {useUserStore, useTalkStore, GroupInfo, createGroupInfo} from '@/store'
 import GroupPanel from '@/components/group/GroupPanel.vue'
 import GroupLaunch from '@/components/group/GroupLaunch.vue'
 import GroupCard from './inner/GroupCard.vue'
 
 import { useRouter } from 'vue-router'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -40,15 +42,30 @@ const filter = computed((): any[] => {
       return false
     }
 
-    return item.group_name.toLowerCase().indexOf(keywords.value.toLowerCase()) != -1
+    return item.name.toLowerCase().indexOf(keywords.value.toLowerCase()) != -1
   })
 })
 
 const onLoadData = () => {
-  ServeGetGroups().then((res) => {
-    if (res.code == 200) {
-      items.value = res.data.items || []
+  grpcClient.umGroupGetList().then((res: gen_grpc.UmGroupGetListRes) => {
+    if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+      items.value = []
+      for (const group of res.groupList) {
+        let item: GroupInfo = createGroupInfo()
+        item.id = group.groupId
+        item.name = group.groupName
+        item.ownerId = group.ownerUid
+        item.memCount = group.memCount
+        item.avatar = group.avatar
+        item.profile = ""
+        items.value.push(item)
+      }
+    } else {
+      console.log("failed to get group list: " + res.errCode)
     }
+  }).catch((err) => {
+    console.log("failed to get group list: " + err)
+    throw err
   })
 }
 
@@ -77,9 +94,9 @@ onMounted(() => {
     <header class="el-header me-view-header bdr-b">
       <div>
         <n-tabs v-model:value="tabIndex">
-          <n-tab name="all"> 全部群聊({{ items.length }}) </n-tab>
-          <n-tab name="create"> 我创建的({{ filterCreator.length }}) </n-tab>
-          <n-tab name="join"> 我加入的({{ items.length - filterCreator.length }}) </n-tab>
+          <n-tab name="all"> 群聊({{ items.length }}) </n-tab>
+<!--          <n-tab name="create"> 我创建的({{ filterCreator.length }}) </n-tab>-->
+<!--          <n-tab name="join"> 我加入的({{ items.length - filterCreator.length }}) </n-tab>-->
         </n-tabs>
       </div>
 
@@ -118,8 +135,8 @@ onMounted(() => {
           v-for="item in filter"
           :key="item.id"
           :avatar="item.avatar"
-          :username="item.group_name"
-          :gender="item.gender"
+          :username="item.name"
+          :gender="0"
           :motto="item.profile"
           flag="查看"
           :is-member="true"

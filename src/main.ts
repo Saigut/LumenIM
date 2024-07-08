@@ -1,13 +1,18 @@
 import '@/assets/css/define/theme.less'
 import '@/assets/css/define/global.less'
 import '@/assets/css/dropsize.less'
-import { createApp } from 'vue'
+import { createApp, ref } from 'vue'
 import router from './router'
 import App from './App.vue'
 import * as plugins from './plugins'
 
 async function bootstrap() {
   const app = createApp(App)
+
+  const localSeqId = ref(0)
+  app.provide('localSeqId', localSeqId)
+
+  app.config.globalProperties.$myUid = 0
 
   app.use(router)
 

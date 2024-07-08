@@ -2,6 +2,11 @@
 import { reactive, ref } from 'vue'
 import { NModal, NForm, NFormItem, NInput, NButton } from 'naive-ui'
 import { ServeUpdatePassword } from '@/api/user'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
+import {setAccessToken, setMyUid} from "@/utils/auth";
+import CryptoJS from "crypto-js";
+import {calPassHash} from "@/utils/util_ts";
 
 defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue', 'close'])
@@ -46,23 +51,23 @@ const loading = ref(false)
 const onSubmit = () => {
   loading.value = true
 
-  let response = ServeUpdatePassword({
-    old_password: model.old_password,
-    new_password: model.new_password
-  })
-
-  response.then((res) => {
-    if (res.code == 200) {
-      window['$message'].success('密码修改成功')
-      emit('update:modelValue', false)
-    } else {
-      window['$message'].warning(res.message)
-    }
-  })
-
-  response.finally(() => {
-    loading.value = false
-  })
+  grpcClient.umUserUpdateInfo("", "", "",
+      calPassHash(model.old_password), calPassHash(model.new_password))
+      .then((res: gen_grpc.UmUserUpdateInfoRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          window['$message'].success('密码修改成功')
+          emit('update:modelValue', false)
+        } else {
+          window['$message'].warning('密码修改失败：' + gen_grpc.ErrCode[res.errCode])
+        }
+      })
+      .catch((err) => {
+        window['$message'].warning('请求失败：' + gen_grpc.ErrCode[err])
+        throw err
+      })
+      .finally(() => {
+        loading.value = false
+      })
 }
 
 const onValidate = (e) => {

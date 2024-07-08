@@ -6,6 +6,9 @@ import GroupApply from '@/components/group/GroupApply.vue'
 import GroupCard from './inner/GroupCard.vue'
 import { ServeGroupOvertList } from '@/api/group'
 import { debounce } from '@/utils/common'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
+import {setAccessToken, setMyUid} from "@/utils/auth";
 
 const apply = reactive({
   isShow: false,
@@ -22,30 +25,40 @@ const search = reactive({
 const items = ref<any[]>([])
 
 const onLoadData = () => {
+  if (search.name.trim() === "") {
+    return;
+  }
+
   if (search.loading) return
 
   search.loading = true
 
-  ServeGroupOvertList({
-    page: search.page,
-    name: search.name
-  })
-    .then((res) => {
-      if (res.code == 200) {
-        let list = res.data.items || []
+  grpcClient.umGroupFind(search.name)
+      .then((res: gen_grpc.UmGroupFindRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          let groupInfo = res.groupInfo
 
-        if (search.page == 1) {
-          items.value = list
+          let item = {} as any
+          item.id = groupInfo.groupId
+          item.name = groupInfo.groupName
+          item.avatar = groupInfo.avatar
+          item.gender = 0
+          item.profile = ""
+          item.count = groupInfo.memCount
+          item.max_num = 200
+          items.value = [ item ]
+
+          search.next = false
         } else {
-          items.value.push(...list)
+          window['$message'].warning(res.errCode)
         }
-
-        search.next = res.data.next
-      }
-    })
-    .finally(() => {
-      search.loading = false
-    })
+      }).catch((err) => {
+        window['$message'].warning(err)
+        throw err
+      })
+      .finally(() => {
+        search.loading = false
+      })
 }
 
 const onLoadMore = () => {
@@ -73,10 +86,10 @@ onLoadData()
     <main class="el-main">
       <section class="el-container is-vertical height100">
         <header class="el-header me-view-header bdr-b">
-          <div>公开群聊({{ items.length }})</div>
+          <div>搜索群聊({{ items.length }})</div>
           <div>
             <n-input
-              placeholder="搜索"
+              placeholder="请输入群ID"
               clearable
               style="width: 200px"
               :on-input="onSearchInput"

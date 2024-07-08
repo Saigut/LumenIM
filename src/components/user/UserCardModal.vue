@@ -1,15 +1,20 @@
 <script lang="ts" setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted, watch } from 'vue'
 import { NIcon, NModal, NButton, NInput, NDropdown, NPopover } from 'naive-ui'
 import { CloseOne, Male, Female, SendOne } from '@icon-park/vue-next'
 import { ServeSearchUser } from '@/api/contact'
 import { ServeCreateContact } from '@/api/contact'
 import { ServeContactGroupList, ServeContactMoveGroup, ServeEditContactRemark } from '@/api/contact'
-import { useTalkStore } from '@/store'
+import {createUserInfo, useEntityInfoStore, useTalkStore, useUserStore} from '@/store'
 import { useRouter } from 'vue-router'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
+import {setAccessToken} from "@/utils/auth";
 
 const router = useRouter()
 const talkStore = useTalkStore()
+const userStore = useUserStore()
+let userInfo = ref(createUserInfo())
 
 const emit = defineEmits(['update:show', 'update:uid', 'updateRemark'])
 
@@ -26,18 +31,40 @@ const props = defineProps({
 
 const loading = ref(true)
 const isOpenFrom = ref(false)
-const state: any = reactive({
-  id: 0,
-  avatar: '',
-  gender: 0,
-  mobile: '',
-  motto: '',
-  nickname: '',
-  remark: '',
-  email: '',
-  status: 1,
-  text: ''
-})
+interface StateType {
+  id: number;
+  avatar: string;
+  gender: number;
+  mobile: string;
+  motto: string;
+  username: string;
+  nickname: string;
+  remark: string;
+  email: string;
+  status: number;
+  text: string;
+  isMutualContact: boolean;
+}
+
+// createStateType
+const createStateType = () => {
+  return {
+    id: 0,
+    avatar: '',
+    gender: 0,
+    mobile: '',
+    motto: '',
+    username: '',
+    nickname: '',
+    remark: '',
+    email: '',
+    status: 0,
+    text: '',
+    isMutualContact: false,
+  }
+}
+
+const state: StateType = reactive(createStateType())
 
 const editCardPopover: any = ref(false)
 const modelRemark = ref('')
@@ -45,7 +72,7 @@ const modelRemark = ref('')
 const options = ref<any>([])
 const groupName = computed(() => {
   const item = options.value.find((item: any) => {
-    return item.key == state.group_id
+    return item.key == 0
   })
 
   if (item) {
@@ -56,52 +83,45 @@ const groupName = computed(() => {
 })
 
 const onLoadData = () => {
-  ServeSearchUser({
-    user_id: props.uid
-  }).then(({ code, data }) => {
-    if (code == 200) {
-      Object.assign(state, data)
+  loading.value = false
 
-      modelRemark.value = state.remark
+  useEntityInfoStore().fetchUserInfo(props.uid)
+  const ret = useEntityInfoStore().getUserById(props.uid)
+  userInfo.value = ret.userInfo
 
-      loading.value = false
-    } else {
-      window['$message'].info('用户信息不存在', { showIcon: false })
-    }
-  })
-
-  ServeContactGroupList().then((res) => {
-    if (res.code == 200) {
-      let items = res.data.items || []
-      options.value = []
-      for (const iter of items) {
-        options.value.push({ label: iter.name, key: iter.id })
-      }
-    }
-  })
+  // ServeContactGroupList().then((res) => {
+  //   if (res.code == 200) {
+  //     let items = res.data.items || []
+  //     options.value = []
+  //     for (const iter of items) {
+  //       options.value.push({ label: iter.name, key: iter.id })
+  //     }
+  //   }
+  // })
 }
 
 const onToTalk = () => {
-  talkStore.toTalk(1, props.uid, router)
+  talkStore.toTalk(1, <number>props.uid, router)
   emit('update:show', false)
 }
 
 const onJoinContact = () => {
-  if (!state.text.length) {
-    return window['$message'].info('备注信息不能为空')
-  }
+  // if (!state.text.length) {
+  //   return window['$message'].info('备注信息不能为空')
+  // }
 
-  ServeCreateContact({
-    friend_id: props.uid,
-    remark: state.text
-  }).then((res) => {
-    if (res.code == 200) {
-      isOpenFrom.value = false
-      window['$message'].success('申请发送成功')
-    } else {
-      window['$message'].error(res.message)
-    }
-  })
+  grpcClient.umContactAddRequest(props.uid)
+      .then((res: gen_grpc.UmContactAddRequestRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          isOpenFrom.value = false
+          window['$message'].success('申请发送成功')
+        } else {
+          window['$message'].error(res.errCode)
+        }
+      }).catch((e) => {
+        window['$message'].error(e)
+        throw e
+      }).finally()
 }
 
 const onChangeRemark = () => {
@@ -112,7 +132,7 @@ const onChangeRemark = () => {
     if (code == 200) {
       editCardPopover.value.setShow(false)
       window['$message'].success('备注成功')
-      state.remark = modelRemark.value
+      userInfo.remark = modelRemark.value
 
       emit('updateRemark', {
         user_id: props.uid,
@@ -130,7 +150,7 @@ const handleSelectGroup = (value) => {
     group_id: value
   }).then(({ code, message }) => {
     if (code == 200) {
-      state.group_id = value
+      // state.group_id = value
       window['$message'].success('分组修改成功')
     } else {
       window['$message'].error(message)
@@ -141,18 +161,7 @@ const handleSelectGroup = (value) => {
 const reset = () => {
   loading.value = true
 
-  Object.assign(state, {
-    id: 0,
-    avatar: '',
-    gender: 0,
-    mobile: '',
-    motto: '',
-    nickname: '',
-    remark: '',
-    email: '',
-    status: 1,
-    text: ''
-  })
+  Object.assign(state, createStateType())
 
   isOpenFrom.value = false
 }
@@ -168,6 +177,24 @@ const onUpdate = (value) => {
 const onAfterEnter = () => {
   onLoadData()
 }
+
+onMounted(() => {
+  const entityInfoStore = useEntityInfoStore()
+  const ret = entityInfoStore.getUserById(props.uid)
+
+  if (ret.isNew) {
+    entityInfoStore.fetchUserInfo(props.uid)
+  }
+
+  // 使用 watch 监听 ret.userInfo 的变化
+  watch(
+      () => ret.userInfo,
+      (newUserInfo) => {
+        userInfo.value = newUserInfo
+      },
+      { immediate: true, deep: true }
+  )
+})
 </script>
 
 <template>
@@ -178,14 +205,14 @@ const onAfterEnter = () => {
           <im-avatar
             class="avatar"
             :size="100"
-            :src="state.avatar"
-            :username="state.remark || state.nickname"
+            :src="userInfo.avatar"
+            :username="userInfo.remark || userInfo.nickname"
             :font-size="30"
           />
 
-          <div class="gender" v-show="state.gender > 0">
-            <n-icon v-if="state.gender == 1" :component="Male" color="#508afe" />
-            <n-icon v-if="state.gender == 2" :component="Female" color="#ff5722" />
+          <div class="gender" v-show="userInfo.gender > 0">
+            <n-icon v-if="userInfo.gender == 1" :component="Male" color="#508afe" />
+            <n-icon v-if="userInfo.gender == 2" :component="Female" color="#ff5722" />
           </div>
 
           <div class="close" @click="onUpdate(false)">
@@ -193,81 +220,85 @@ const onAfterEnter = () => {
           </div>
 
           <div class="nickname text-ellipsis">
-            {{ state.remark || state.nickname || '未设置昵称' }}
+            {{ userInfo.remark || userInfo.nickname || '未设置昵称' }}
           </div>
         </header>
 
         <main class="el-main main me-scrollbar me-scrollbar-thumb">
-          <div class="motto">
-            {{ state.motto || '编辑个签，展示我的独特态度。' }}
-          </div>
+<!--          <div class="motto">-->
+<!--            {{ userInfo.motto || '编辑个签，展示我的独特态度。' }}-->
+<!--          </div>-->
 
           <div class="infos">
-            <div class="info-item">
-              <span class="name">手机 :</span>
-              <span class="text">{{ state.mobile }}</span>
-            </div>
+<!--            <div class="info-item">-->
+<!--              <span class="name">手机 :</span>-->
+<!--              <span class="text">{{ state.mobile }}</span>-->
+<!--            </div>-->
             <div class="info-item">
               <span class="name">昵称 :</span>
-              <span class="text text-ellipsis">{{ state.nickname || '-' }} </span>
+              <span class="text text-ellipsis">{{ userInfo.nickname || '-' }} </span>
             </div>
             <div class="info-item">
-              <span class="name">性别 :</span>
-              <span class="text">{{
-                state.gender == 1 ? '男' : state.gender == 2 ? '女' : '未知'
-              }}</span>
+              <span class="name">账号 :</span>
+              <span class="text text-ellipsis">{{ userInfo.username }} </span>
             </div>
-            <div class="info-item" v-if="state.friend_status == 2">
-              <span class="name">备注 :</span>
-              <n-popover trigger="click" placement="top-start" ref="editCardPopover">
-                <template #trigger>
-                  <span class="text edit pointer text-ellipsis">
-                    {{ state.remark || '未设置' }}&nbsp;&nbsp;
-                  </span>
-                </template>
+<!--            <div class="info-item">-->
+<!--              <span class="name">性别 :</span>-->
+<!--              <span class="text">{{-->
+<!--                state.gender == 1 ? '男' : state.gender == 2 ? '女' : '未知'-->
+<!--              }}</span>-->
+<!--            </div>-->
+<!--            <div class="info-item" v-if="userInfo.isMutualContact">-->
+<!--              <span class="name">备注 :</span>-->
+<!--              <n-popover trigger="click" placement="top-start" ref="editCardPopover">-->
+<!--                <template #trigger>-->
+<!--                  <span class="text edit pointer text-ellipsis">-->
+<!--                    {{ userInfo.remark || '未设置' }}&nbsp;&nbsp;-->
+<!--                  </span>-->
+<!--                </template>-->
 
-                <template #header> 设置备注 </template>
+<!--                <template #header> 设置备注 </template>-->
 
-                <div style="display: flex">
-                  <n-input
-                    type="text"
-                    placeholder="请填写备注"
-                    :autofocus="true"
-                    maxlength="10"
-                    v-model:value="modelRemark"
-                    @keydown.enter="onChangeRemark"
-                  />
-                  <n-button
-                    type="primary"
-                    text-color="#ffffff"
-                    class="mt-l5"
-                    @click="onChangeRemark"
-                  >
-                    确定
-                  </n-button>
-                </div>
-              </n-popover>
-            </div>
+<!--                <div style="display: flex">-->
+<!--                  <n-input-->
+<!--                    type="text"-->
+<!--                    placeholder="请填写备注"-->
+<!--                    :autofocus="true"-->
+<!--                    maxlength="10"-->
+<!--                    v-model:value="modelRemark"-->
+<!--                    @keydown.enter="onChangeRemark"-->
+<!--                  />-->
+<!--                  <n-button-->
+<!--                    type="primary"-->
+<!--                    text-color="#ffffff"-->
+<!--                    class="mt-l5"-->
+<!--                    @click="onChangeRemark"-->
+<!--                  >-->
+<!--                    确定-->
+<!--                  </n-button>-->
+<!--                </div>-->
+<!--              </n-popover>-->
+<!--            </div>-->
             <div class="info-item">
               <span class="name">邮箱 :</span>
-              <span class="text">{{ state.email || '-' }}</span>
+              <span class="text">{{ userInfo.email || '-' }}</span>
             </div>
-            <div class="info-item" v-if="state.friend_status == 2">
-              <span class="name">分组 :</span>
-              <n-dropdown
-                trigger="click"
-                placement="top-start"
-                :show-arrow="true"
-                :options="options"
-                @select="handleSelectGroup"
-              >
-                <span class="text edit pointer">{{ groupName }}</span>
-              </n-dropdown>
-            </div>
+<!--            <div class="info-item" v-if="state.isMutualContact">-->
+<!--              <span class="name">分组 :</span>-->
+<!--              <n-dropdown-->
+<!--                trigger="click"-->
+<!--                placement="top-start"-->
+<!--                :show-arrow="true"-->
+<!--                :options="options"-->
+<!--                @select="handleSelectGroup"-->
+<!--              >-->
+<!--                <span class="text edit pointer">{{ groupName }}</span>-->
+<!--              </n-dropdown>-->
+<!--            </div>-->
           </div>
         </main>
 
-        <footer v-if="state.friend_status == 2" class="el-footer footer bdr-t flex-center">
+        <footer v-if="userInfo.id !== 0 && userInfo.isMutualContact" class="el-footer footer bdr-t flex-center">
           <n-button
             round
             block
@@ -283,7 +314,7 @@ const onAfterEnter = () => {
           </n-button>
         </footer>
 
-        <footer v-else-if="state.friend_status == 1" class="el-footer footer bdr-t flex-center">
+        <footer v-else-if="userInfo.id !== 0 && useUserStore().uid !== userInfo.id && !userInfo.isMutualContact" class="el-footer footer bdr-t flex-center">
           <template v-if="isOpenFrom">
             <n-input
               type="text"

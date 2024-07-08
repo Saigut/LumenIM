@@ -3,7 +3,7 @@ import { watch, onMounted, ref } from 'vue'
 import { NDropdown, NCheckbox } from 'naive-ui'
 import { Loading, MoreThree, ToTop } from '@icon-park/vue-next'
 import { bus } from '@/utils/event-bus'
-import { useDialogueStore } from '@/store'
+import {useDialogueStore, UserInfo} from '@/store'
 import { formatTime, parseTime } from '@/utils/datetime'
 import { clipboard, htmlDecode, clipboardImage } from '@/utils/common'
 import { downloadImage } from '@/utils/functions'
@@ -13,6 +13,7 @@ import SkipBottom from './SkipBottom.vue'
 import { ITalkRecord } from '@/types/chat'
 import { EditorConst } from '@/constant/event-bus'
 import { useInject, useTalkRecord, useUtil } from '@/hooks'
+import { useEntityInfoStore } from "@/store";
 
 const props = defineProps({
   uid: {
@@ -33,7 +34,7 @@ const props = defineProps({
   }
 })
 
-const { loadConfig, records, onLoad, onRefreshLoad, onJumpMessage } = useTalkRecord(props.uid)
+const { loadConfig, records, onLoad, onRefreshLoad, onJumpMessage } = useTalkRecord(props.uid, props.talk_type, props.receiver_id)
 
 const { useMessage } = useUtil()
 const { dropdown, showDropdownMenu, closeDropdownMenu } = useMenu()
@@ -53,7 +54,7 @@ const isShowTalkTime = (index: number, datetime: string) => {
     return false
   }
 
-  datetime = datetime.replace(/-/g, '/')
+  // datetime = datetime.replace(/-/g, '/')
   let time = Math.floor(Date.parse(datetime) / 1000)
   let currTime = Math.floor(new Date().getTime() / 1000)
 
@@ -62,10 +63,11 @@ const isShowTalkTime = (index: number, datetime: string) => {
 
   // 判断是否是最后一条消息,最后一条消息默认显示时间
   if (index == records.value.length - 1) {
-    return true
+    return false
   }
 
-  let nextDate = records.value[index + 1].created_at.replace(/-/g, '/')
+  // let nextDate = records.value[index + 1].created_at.replace(/-/g, '/')
+  let nextDate = records.value[index + 1].created_at
 
   return !(
     parseTime(new Date(datetime), '{y}-{m}-{d} {h}:{i}') ==
@@ -135,12 +137,12 @@ const onRevokeTalk = (data: ITalkRecord) => {
 
 // 多选事件
 const onMultiSelect = (data: ITalkRecord) => {
-  dialogueStore.updateDialogueRecord({
-    msg_id: data.msg_id,
-    isCheck: true
-  })
-
-  dialogueStore.isOpenMultiSelect = true
+  // dialogueStore.updateDialogueRecord({
+  //   msg_id: data.msg_id,
+  //   isCheck: true
+  // })
+  //
+  // dialogueStore.isOpenMultiSelect = true
 }
 
 const onDownloadFile = (data: ITalkRecord) => {
@@ -258,6 +260,14 @@ const onRowClick = (item: ITalkRecord) => {
   }
 }
 
+const getUserDisplayNameById = (user_id: number): string => {
+  const ret = useEntityInfoStore().getUserById(user_id)
+  if (ret.isNew) {
+    useEntityInfoStore().fetchUserInfo(user_id)
+  }
+  return ret.userInfo.noteName || ret.userInfo.nickname || ret.userInfo.username;
+}
+
 watch(props, () => {
   onLoad({ ...props, limit: 30 })
 })
@@ -275,11 +285,11 @@ onMounted(() => {
       @scroll="onPanelScroll($event)"
     >
       <!-- 数据加载状态栏 -->
-      <div class="load-toolbar pointer">
-        <span v-if="loadConfig.status == 0"> 正在加载数据中 ... </span>
-        <span v-else-if="loadConfig.status == 1" @click="onRefreshLoad"> 查看更多消息 ... </span>
-        <span v-else class="no-more"> 没有更多消息了 </span>
-      </div>
+<!--      <div class="load-toolbar pointer">-->
+<!--        <span v-if="loadConfig.status == 0"> 正在加载数据中 ... </span>-->
+<!--        <span v-else-if="loadConfig.status == 1" @click="onRefreshLoad"> 查看更多消息 ... </span>-->
+<!--        <span v-else class="no-more"> 没有更多消息了 </span>-->
+<!--      </div>-->
 
       <div
         class="message-item"
@@ -287,12 +297,19 @@ onMounted(() => {
         :key="item.msg_id"
         :id="item.msg_id"
       >
+        <div class="datetime" v-show="isShowTalkTime(index, item.created_at)">
+          {{ parseTime(item.created_at) }}
+        </div>
+
         <!-- 系统消息 -->
         <div v-if="item.msg_type >= 1000" class="message-box">
           <component
             :is="MessageComponents[item.msg_type] || 'unknown-message'"
             :extra="item.extra"
             :data="item"
+            :receiver_id="receiver_id"
+            :max-width="true"
+            :source="'panel'"
           />
         </div>
 
@@ -331,7 +348,7 @@ onMounted(() => {
               class="pointer"
               :src="item.avatar"
               :size="30"
-              :username="item.nickname"
+              :username="getUserDisplayNameById(item.user_id)"
               @click="showUserInfoModal(item.user_id)"
             />
           </aside>
@@ -344,9 +361,9 @@ onMounted(() => {
                 v-show="talk_type == 2 && item.float == 'left'"
                 @click="onClickNickname(item)"
               >
-                <span class="at">@</span>{{ item.nickname }}
+                <span class="at">@</span>{{ getUserDisplayNameById(item.user_id) }}
               </span>
-              <span>{{ parseTime(item.created_at, '{m}/{d} {h}:{i}') }}</span>
+<!--              <span>{{ parseTime(item.created_at, '{m}/{d} {h}:{i}') }}</span>-->
             </div>
 
             <div
@@ -358,6 +375,7 @@ onMounted(() => {
                 :is="MessageComponents[item.msg_type] || 'unknown-message'"
                 :extra="item.extra"
                 :data="item"
+                :receiver_id="receiver_id"
                 :max-width="true"
                 :source="'panel'"
                 @contextmenu.prevent="onContextMenu($event, item)"
@@ -387,7 +405,7 @@ onMounted(() => {
             </div>
 
             <div
-              v-if="item.extra.reply"
+                v-if="item.extra?.reply?.msg_id"
               class="talk-reply pointer"
               @click="onJumpMessage(item.extra?.reply?.msg_id)"
             >
@@ -398,10 +416,6 @@ onMounted(() => {
               </span>
             </div>
           </main>
-        </div>
-
-        <div class="datetime" v-show="isShowTalkTime(index, item.created_at)">
-          {{ formatTime(item.created_at) }}
         </div>
       </div>
     </div>

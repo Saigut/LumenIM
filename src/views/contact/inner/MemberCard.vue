@@ -45,7 +45,7 @@ defineProps({
         </div>
       </div>
 
-      <div class="flags text-ellipsis">{{ motto || '...' }}</div>
+      <div class="flags text-ellipsis">{{ motto }}</div>
 
       <div class="helper">
         <div class="status">{{ flag }}</div>

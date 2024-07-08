@@ -39,7 +39,7 @@ export function deltaToMessage(delta: Delta): AnalysisResp {
     }
 
     if (typeof insert === 'string') {
-      if (!insert || insert == '\n') continue
+      if (!insert) continue
 
       if (node && node.type == 1) {
         node.content = node.content + insert

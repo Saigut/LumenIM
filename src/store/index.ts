@@ -1,4 +1,5 @@
 export * from '@/store/modules/user'
+export * from '@/store/modules/entityinfo'
 export * from '@/store/modules/settings'
 export * from '@/store/modules/talk'
 export * from '@/store/modules/editor'

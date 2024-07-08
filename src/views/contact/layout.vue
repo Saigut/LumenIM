@@ -24,7 +24,7 @@ const menus = reactive([
     icon: markRaw(Peoples)
   },
   {
-    name: '公开群聊',
+    name: '搜索群聊',
     path: '/contact/group/open',
     icon: markRaw(PeoplesTwo)
   },

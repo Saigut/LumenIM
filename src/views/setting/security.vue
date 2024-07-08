@@ -37,25 +37,25 @@ const onChangeEmailSuccess = (value: string) => {
         </div>
       </div>
 
-      <div class="view-list">
-        <div class="content">
-          <div class="name">绑定手机</div>
-          <div class="desc">已绑定手机 ：{{ hidePhone(userStore.mobile) }}</div>
-        </div>
-        <div class="tools">
-          <n-button type="primary" text @click="isShowChangeMobile = true"> 修改 </n-button>
-        </div>
-      </div>
+<!--      <div class="view-list">-->
+<!--        <div class="content">-->
+<!--          <div class="name">绑定手机</div>-->
+<!--          <div class="desc">已绑定手机 ：{{ hidePhone(userStore.mobile) }}</div>-->
+<!--        </div>-->
+<!--        <div class="tools">-->
+<!--          <n-button type="primary" text @click="isShowChangeMobile = true"> 修改 </n-button>-->
+<!--        </div>-->
+<!--      </div>-->
 
-      <div class="view-list">
-        <div class="content">
-          <div class="name">绑定邮箱</div>
-          <div class="desc">已绑定邮箱 ：{{ userStore.email || '未设置' }}</div>
-        </div>
-        <div class="tools">
-          <n-button type="primary" text @click="isShowChangeEmail = true"> 修改 </n-button>
-        </div>
-      </div>
+<!--      <div class="view-list">-->
+<!--        <div class="content">-->
+<!--          <div class="name">绑定邮箱</div>-->
+<!--          <div class="desc">已绑定邮箱 ：{{ userStore.email || '未设置' }}</div>-->
+<!--        </div>-->
+<!--        <div class="tools">-->
+<!--          <n-button type="primary" text @click="isShowChangeEmail = true"> 修改 </n-button>-->
+<!--        </div>-->
+<!--      </div>-->
     </div>
   </section>
 

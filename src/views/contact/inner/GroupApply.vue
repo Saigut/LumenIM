@@ -1,12 +1,14 @@
 <script lang="ts" setup>
-import { ref, onMounted, h } from 'vue'
+import { ref, onMounted, h, computed } from 'vue'
 import { NInput } from 'naive-ui'
 import { Close, CheckSmall } from '@icon-park/vue-next'
-import { useUserStore } from '@/store'
+import { groupApplyStore, useUserStore, entityGetUserById} from '@/store'
 import { ServeGetGroupApplyAll, ServeDeleteGroupApply, ServeAgreeGroupApply } from '@/api/group'
 import { throttle } from '@/utils/common'
 import { parseTime } from '@/utils/datetime'
 import { useUtil, useInject } from '@/hooks'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
 
 interface Item {
   id: number
@@ -22,19 +24,24 @@ interface Item {
 const { useMessage, useDialog } = useUtil()
 const { showUserInfoModal } = useInject()
 const userStore = useUserStore()
-const items = ref<Item[]>([])
+const itemStore = groupApplyStore();
+const groupApplyItems = computed({
+  get: () => itemStore.items,
+  set: (value: Item[]) => itemStore.setItems(value)
+});
 const loading = ref(true)
 
 const onLoadData = () => {
-  ServeGetGroupApplyAll()
-    .then((res) => {
-      if (res.code == 200) {
-        items.value = res.data.items || []
-      }
-    })
-    .finally(() => {
-      loading.value = false
-    })
+  loading.value = false
+  // ServeGetGroupApplyAll()
+  //   .then((res) => {
+  //     if (res.code == 200) {
+  //       groupApplyItems.value = res.data.items || []
+  //     }
+  //   })
+  //   .finally(() => {
+  //     loading.value = false
+  //   })
 }
 
 const onInfo = (item: Item) => {
@@ -44,18 +51,24 @@ const onInfo = (item: Item) => {
 const onAgree = throttle((item: Item) => {
   let loading = useMessage.loading('请稍等，正在处理')
 
-  ServeAgreeGroupApply({
-    apply_id: item.id
-  }).then((res) => {
-    loading.destroy()
-    if (res.code == 200) {
-      useMessage.success('已同意')
-    } else {
-      useMessage.info(res.message)
-    }
-
-    onLoadData()
-  })
+  console.log(item)
+  grpcClient.umGroupAccept(item.group_id, item.user_id)
+      .then((res: gen_grpc.UmGroupAcceptRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          itemStore.delItem(item.group_id, item.user_id)
+          useMessage.success('已同意')
+        } else {
+          useMessage.info('操作失败: ' + gen_grpc.ErrCode[res.errCode])
+        }
+      })
+      .catch((err) => {
+        useMessage.info('请求失败：' + err)
+        throw err
+      })
+      .finally(() => {
+        loading.destroy()
+        onLoadData()
+      })
 }, 1000)
 
 const onDelete = (item: Item) => {
@@ -74,24 +87,26 @@ const onDelete = (item: Item) => {
     negativeText: '取消',
     positiveText: '提交',
     onPositiveClick: () => {
-      if (!remark.length) return false
 
       dialog.loading = true
 
-      ServeDeleteGroupApply({
-        apply_id: item.id,
-        remark: remark
-      }).then((res) => {
-        dialog.destroy()
-
-        if (res.code == 200) {
-          useMessage.success('已拒绝')
-        } else {
-          useMessage.info(res.message)
-        }
-
-        onLoadData()
-      })
+      grpcClient.umGroupReject(item.group_id, item.user_id)
+          .then((res: gen_grpc.UmGroupRejectRes) => {
+            if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+              itemStore.delItem(item.group_id, item.user_id)
+              useMessage.success('已拒绝')
+            } else {
+              useMessage.info('请求失败: ' + gen_grpc.ErrCode[res.errCode])
+            }
+          })
+          .catch((err) => {
+            useMessage.info(err)
+            throw err
+          })
+          .finally(() => {
+            dialog.destroy()
+            onLoadData()
+          })
 
       return false
     }
@@ -108,7 +123,7 @@ onMounted(() => {
 <template>
   <section v-loading="loading" style="min-height: 300px">
     <n-empty
-      v-show="items.length == 0"
+      v-show="groupApplyItems.length == 0"
       style="margin-top: 10%"
       size="200"
       description="暂无相关数据"
@@ -118,18 +133,18 @@ onMounted(() => {
       </template>
     </n-empty>
 
-    <div class="item" v-for="item in items" :key="item.id">
+    <div class="item" v-for="item in groupApplyItems" :key="item.id">
       <div class="avatar" @click="onInfo(item)">
-        <im-avatar :size="40" :src="item.avatar" :username="item.nickname" />
+        <im-avatar :size="40" :src="item.userInfo.avatar" :username="item.userInfo.nickname" />
       </div>
 
       <div class="content pointer o-hidden" @click="onInfo(item)">
         <div class="username">
           <span>
+            {{ item.userInfo.nickname }} 申请加入
             <n-tag :bordered="false" size="small" type="primary">
-              {{ item.group_name }}
+              {{ item.groupInfo.name }}
             </n-tag>
-            {{ item.nickname }}
           </span>
           <span class="time">{{ parseTime(item.created_at, '{m}/{d} {h}:{i}') }}</span>
         </div>

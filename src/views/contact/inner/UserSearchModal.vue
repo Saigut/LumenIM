@@ -1,8 +1,10 @@
-<script setup>
+<script lang="ts" setup>
 import { computed, ref, inject } from 'vue'
 import { NModal, NForm, NFormItem, NInput } from 'naive-ui'
 import { ServeSearchContact } from '@/api/contact'
 import { useInject } from '@/hooks'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
 
 const { showUserInfoModal } = useInject()
 
@@ -27,15 +29,19 @@ const onSubmit = () => {
     return
   }
 
-  ServeSearchContact({
-    mobile: keyword.value
-  }).then((res) => {
-    onShowError(res.code != 200)
+  // showUserInfoModal(keyword.value)
 
-    if (res.code == 200) {
-      showUserInfoModal(res.data.id)
-    }
-  })
+  grpcClient.umContactFind(keyword.value)
+      .then((res: gen_grpc.UmContactFindRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          showUserInfoModal(res.userInfo.uid)
+        } else {
+          onShowError(true)
+        }
+      }).catch((err) => {
+        onShowError(true)
+        throw err
+      })
 }
 
 // 是否可提交
@@ -52,7 +58,7 @@ const onShowUpdate = () => {
   <n-modal
     v-model:show="isShow"
     preset="card"
-    title="好友搜索"
+    title="添加好友"
     size="huge"
     :bordered="false"
     class="modal-radius"
@@ -63,7 +69,7 @@ const onShowUpdate = () => {
     transform-origin="center"
   >
     <n-form>
-      <n-form-item label="请输入手机号" :required="true">
+      <n-form-item label="请输入账号" :required="true">
         <n-input
           placeholder="必填"
           :maxlength="30"

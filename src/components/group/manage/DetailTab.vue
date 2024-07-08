@@ -3,6 +3,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { NForm, NFormItem, NInput } from 'naive-ui'
 import AvatarCropper from '@/components/base/AvatarCropper.vue'
 import { ServeGroupDetail, ServeEditGroup } from '@/api/group'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
+import {setAccessToken, setMyUid} from "@/utils/auth";
+import {useEntityInfoStore} from "@/store";
 
 const emit = defineEmits(['close'])
 
@@ -43,18 +47,19 @@ function onSubmitBaseInfo() {
     return window['$message'].info('群名称不能为空')
   }
 
-  ServeEditGroup({
-    group_id: props.id,
-    group_name: modelDetail.name,
-    avatar: modelDetail.avatar,
-    profile: modelDetail.profile
-  }).then((res) => {
-    if (res.code == 200) {
-      window['$message'].success('群信息更新成功')
-    } else {
-      window['$message'].error(res.message)
-    }
-  })
+  grpcClient.umGroupUpdateInfo(props.id, modelDetail.name, modelDetail.avatar)
+      .then((res: gen_grpc.UmGroupUpdateInfoRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          window['$message'].success('群信息更新成功')
+          useEntityInfoStore().fetchGroupInfo(props.id)
+        } else {
+          window['$message'].warning('群信息更新失败：' + gen_grpc.ErrCode[res.errCode])
+        }
+      })
+      .catch((err) => {
+        window['$message'].warning('请求失败：' + gen_grpc.ErrCode[err])
+        throw err
+      })
 }
 
 onMounted(() => {
@@ -75,36 +80,36 @@ onMounted(() => {
           maxWidth: '350px'
         }"
       >
-        <n-form-item label="群头像:" path="name">
-          <n-avatar v-if="modelDetail.avatar" :size="60" :src="modelDetail.avatar" />
-          <n-avatar
-            v-else
-            :size="60"
-            :style="{
-              color: 'white',
-              backgroundColor: '#508afe',
-              fontSize: '18px'
-            }"
-            >{{ modelDetail.name.substring(0, 1) }}</n-avatar
-          >
-          <n-button
-            type="primary"
-            size="tiny"
-            style="margin-left: 20px"
-            dashed
-            @click="cropper = true"
-          >
-            上传头像
-          </n-button>
-        </n-form-item>
+<!--        <n-form-item label="群头像:" path="name">-->
+<!--          <n-avatar v-if="modelDetail.avatar" :size="60" :src="modelDetail.avatar" />-->
+<!--          <n-avatar-->
+<!--            v-else-->
+<!--            :size="60"-->
+<!--            :style="{-->
+<!--              color: 'white',-->
+<!--              backgroundColor: '#508afe',-->
+<!--              fontSize: '18px'-->
+<!--            }"-->
+<!--            >{{ modelDetail.name.substring(0, 1) }}</n-avatar-->
+<!--          >-->
+<!--          <n-button-->
+<!--            type="primary"-->
+<!--            size="tiny"-->
+<!--            style="margin-left: 20px"-->
+<!--            dashed-->
+<!--            @click="cropper = true"-->
+<!--          >-->
+<!--            上传头像-->
+<!--          </n-button>-->
+<!--        </n-form-item>-->
 
         <n-form-item label="群名称:" required path="name">
           <n-input placeholder="必填" type="text" v-model:value="modelDetail.name" />
         </n-form-item>
 
-        <n-form-item label="群简介:" path="profile">
-          <n-input placeholder="选填" type="textarea" v-model:value="modelDetail.profile" />
-        </n-form-item>
+<!--        <n-form-item label="群简介:" path="profile">-->
+<!--          <n-input placeholder="选填" type="textarea" v-model:value="modelDetail.profile" />-->
+<!--        </n-form-item>-->
         <n-form-item label="">
           <n-button type="primary" @click="onSubmitBaseInfo"> 保存信息 </n-button>
         </n-form-item>

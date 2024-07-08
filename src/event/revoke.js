@@ -78,10 +78,10 @@ class Revoke extends Base {
       return
     }
 
-    useDialogueStore().updateDialogueRecord({
-      msg_id: this.msg_id,
-      is_revoke: 1
-    })
+    // useDialogueStore().updateDialogueRecord({
+    //   msg_id: this.msg_id,
+    //   is_revoke: 1
+    // })
   }
 }
 

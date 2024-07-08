@@ -126,60 +126,60 @@ const editorOption = {
 }
 
 const navs = reactive([
-  {
-    title: '图片',
-    icon: markRaw(Pic),
-    show: true,
-    click: () => {
-      fileImageRef.value.click()
-    }
-  },
-  {
-    title: '附件',
-    icon: markRaw(FolderUpload),
-    show: true,
-    click: () => {
-      uploadFileRef.value.click()
-    }
-  },
-  {
-    title: '代码',
-    icon: markRaw(SourceCode),
-    show: true,
-    click: () => {
-      isShowEditorCode.value = true
-    }
-  },
-  {
-    title: '语音消息',
-    icon: markRaw(IconVoice),
-    show: true,
-    click: () => {
-      isShowEditorRecorder.value = true
-    }
-  },
-  {
-    title: '地理位置',
-    icon: markRaw(Local),
-    show: true,
-    click: () => {}
-  },
-  {
-    title: '群投票',
-    icon: markRaw(Ranking),
-    show: computed(() => props.vote),
-    click: () => {
-      isShowEditorVote.value = true
-    }
-  },
-  {
-    title: '历史记录',
-    icon: markRaw(History),
-    show: true,
-    click: () => {
-      emit('editor-event', emitCall('history_event'))
-    }
-  }
+  // {
+  //   title: '图片',
+  //   icon: markRaw(Pic),
+  //   show: true,
+  //   click: () => {
+  //     fileImageRef.value.click()
+  //   }
+  // },
+  // {
+  //   title: '附件',
+  //   icon: markRaw(FolderUpload),
+  //   show: true,
+  //   click: () => {
+  //     uploadFileRef.value.click()
+  //   }
+  // },
+  // {
+  //   title: '代码',
+  //   icon: markRaw(SourceCode),
+  //   show: true,
+  //   click: () => {
+  //     isShowEditorCode.value = true
+  //   }
+  // },
+  // {
+  //   title: '语音消息',
+  //   icon: markRaw(IconVoice),
+  //   show: true,
+  //   click: () => {
+  //     isShowEditorRecorder.value = true
+  //   }
+  // },
+  // {
+  //   title: '地理位置',
+  //   icon: markRaw(Local),
+  //   show: true,
+  //   click: () => {}
+  // },
+  // {
+  //   title: '群投票',
+  //   icon: markRaw(Ranking),
+  //   show: computed(() => props.vote),
+  //   click: () => {
+  //     isShowEditorVote.value = true
+  //   }
+  // },
+  // {
+  //   title: '历史记录',
+  //   icon: markRaw(History),
+  //   show: true,
+  //   click: () => {
+  //     emit('editor-event', emitCall('history_event'))
+  //   }
+  // }
 ])
 
 function onUploadImage(file: File) {

@@ -18,11 +18,11 @@ const menus = [
     path: '/settings/personalize',
     icon: Tool
   },
-  {
-    name: '绑定设置',
-    path: '/settings/binding',
-    icon: LinkThree
-  },
+  // {
+  //   name: '绑定设置',
+  //   path: '/settings/binding',
+  //   icon: LinkThree
+  // },
   {
     name: '通知设置',
     path: '/settings/notification',

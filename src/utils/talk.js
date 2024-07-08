@@ -9,7 +9,7 @@ export function formatTalkRecord(uid, data) {
     data.float = data.user_id == uid ? 'right' : 'left'
   }
 
-  data.isCheck = false
+  data.isCheck = data.is_read
 
   return data
 }
@@ -28,6 +28,7 @@ export function palyMusic(muted = false) {
  * @param {Object} params
  */
 export function formatTalkItem(params) {
+  // type: ISession
   let options = {
     id: 0,
     talk_type: 1,
@@ -44,7 +45,10 @@ export function formatTalkItem(params) {
     draft_text: '',
     msg_text: '',
     index_name: '',
-    updated_at: parseTime(new Date())
+    updated_at: parseTime(new Date()),
+    conv_msg_id: 0,
+    userInfo: {},
+    groupInfo: {},
   }
 
   options = { ...options, ...params }

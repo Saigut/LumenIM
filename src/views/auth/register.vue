@@ -6,6 +6,10 @@ import { ServeRegister } from '@/api/auth'
 import { ServeSendVerifyCode } from '@/api/common'
 import { isMobile } from '@/utils/validate'
 import { useSmsLock } from '@/hooks'
+import grpcClient from '@/grpc-client'
+import {gen_grpc} from "@/gen_grpc/api";
+import CryptoJS from 'crypto-js';
+import {calPassHash} from "@/utils/util_ts";
 
 // 初始化短信按钮锁
 const { lockTime, start } = useSmsLock('REGISTER_SMS', 60)
@@ -21,15 +25,15 @@ const rules = {
   username: {
     required: true,
     // @ts-ignore
-    validator(rule: any, value: string) {
-      if (!value) {
-        return new Error('手机号不能为空！')
-      } else if (!isMobile(value)) {
-        return new Error('请正确填写手机号！')
-      }
-
-      return true
-    },
+    // validator(rule: any, value: string) {
+    //   if (!value) {
+    //     return new Error('手机号不能为空！')
+    //   } else if (!isMobile(value)) {
+    //     return new Error('请正确填写手机号！')
+    //   }
+    //
+    //   return true
+    // },
     trigger: ['blur', 'input']
   },
   password: {
@@ -41,6 +45,11 @@ const rules = {
     required: true,
     trigger: ['blur', 'input'],
     message: '验证码不能为空！'
+  },
+  email: {
+    required: true,
+    trigger: ['blur', 'input'],
+    message: '邮箱不能为空！'
   }
 }
 
@@ -48,36 +57,33 @@ const model = reactive({
   nickname: '',
   username: '',
   password: '',
+  email: '',
   sms_code: '',
   loading: false
 })
 
 const onRegister = () => {
-  model.loading = true
+  model.loading = true;
 
-  const response = ServeRegister({
-    nickname: model.nickname,
-    mobile: model.username,
-    password: model.password,
-    sms_code: model.sms_code,
-    platform: 'web'
-  })
+  grpcClient.umRegister(model.username, model.nickname, calPassHash(model.password), model.email)
+      .then((res: gen_grpc.UmRegisterRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) { // 假设返回的响应对象有一个 getCode() 方法
+          window['$message'].success('注册成功');
 
-  response.then((res) => {
-    if (res.code == 200) {
-      window['$message'].success('注册成功')
-
-      setTimeout(() => {
-        router.push('/auth/login')
-      }, 500)
-    } else {
-      window['$message'].warning(res.message)
-    }
-  })
-
-  response.finally(() => {
-    model.loading = false
-  })
+          setTimeout(() => {
+            router.push('/auth/login');
+          }, 500);
+        } else {
+          window['$message'].warning(res.errCode); // 假设返回的响应对象有一个 getMessage() 方法
+        }
+      })
+      .catch((error) => {
+        window['$message'].error(`注册失败: ${error.message}`);
+        throw error;
+      })
+      .finally(() => {
+        model.loading = false;
+      });
 }
 
 const onValidate = (e) => {
@@ -131,32 +137,24 @@ const onSendSms = () => {
       <n-form ref="formRef" size="large" :model="model" :rules="rules">
         <n-form-item path="username" :show-label="false">
           <n-input
-            placeholder="请输入手机号"
+            placeholder="用户名"
             v-model:value="model.username"
             :maxlength="11"
             @keydown.enter="onValidate"
           />
         </n-form-item>
 
-        <n-form-item path="sms_code" :show-label="false">
-          <n-input
-            placeholder="验证码"
-            v-model:value="model.sms_code"
-            :maxlength="6"
-            @keydown.enter="onValidate"
-          />
-          <n-button tertiary class="mt-l5" @click="onSendSms" :disabled="lockTime > 0">
-            获取验证码 <span v-show="lockTime > 0">({{ lockTime }}s)</span>
-          </n-button>
-        </n-form-item>
-
-        <n-form-item path="nickname" :show-label="false">
-          <n-input
-            placeholder="设置昵称"
-            v-model:value="model.nickname"
-            @keydown.enter="onValidate"
-          />
-        </n-form-item>
+<!--        <n-form-item path="sms_code" :show-label="false">-->
+<!--          <n-input-->
+<!--            placeholder="验证码"-->
+<!--            v-model:value="model.sms_code"-->
+<!--            :maxlength="6"-->
+<!--            @keydown.enter="onValidate"-->
+<!--          />-->
+<!--          <n-button tertiary class="mt-l5" @click="onSendSms" :disabled="lockTime > 0">-->
+<!--            获取验证码 <span v-show="lockTime > 0">({{ lockTime }}s)</span>-->
+<!--          </n-button>-->
+<!--        </n-form-item>-->
 
         <n-form-item path="password" :show-label="false">
           <n-input
@@ -165,6 +163,22 @@ const onSendSms = () => {
             show-password-on="click"
             v-model:value="model.password"
             @keydown.enter="onValidate"
+          />
+        </n-form-item>
+
+        <n-form-item path="nickname" :show-label="false">
+          <n-input
+              placeholder="设置昵称"
+              v-model:value="model.nickname"
+              @keydown.enter="onValidate"
+          />
+        </n-form-item>
+
+        <n-form-item path="email" :show-label="false">
+          <n-input
+              placeholder="邮箱"
+              v-model:value="model.email"
+              @keydown.enter="onValidate"
           />
         </n-form-item>
 

@@ -46,25 +46,25 @@ const darkTheme = computed({
         </div>
       </div>
 
-      <div class="view-list">
-        <div class="content">
-          <div class="name">我的名片</div>
-          <div class="desc">当前未设置名片背景</div>
-        </div>
-        <div class="tools">
-          <n-button type="primary" text> 修改 </n-button>
-        </div>
-      </div>
+<!--      <div class="view-list">-->
+<!--        <div class="content">-->
+<!--          <div class="name">我的名片</div>-->
+<!--          <div class="desc">当前未设置名片背景</div>-->
+<!--        </div>-->
+<!--        <div class="tools">-->
+<!--          <n-button type="primary" text> 修改 </n-button>-->
+<!--        </div>-->
+<!--      </div>-->
 
-      <div class="view-list">
-        <div class="content">
-          <div class="name">聊天背景</div>
-          <div class="desc">当前未设置聊天背景图</div>
-        </div>
-        <div class="tools">
-          <n-button type="primary" text> 修改 </n-button>
-        </div>
-      </div>
+<!--      <div class="view-list">-->
+<!--        <div class="content">-->
+<!--          <div class="name">聊天背景</div>-->
+<!--          <div class="desc">当前未设置聊天背景图</div>-->
+<!--        </div>-->
+<!--        <div class="tools">-->
+<!--          <n-button type="primary" text> 修改 </n-button>-->
+<!--        </div>-->
+<!--      </div>-->
     </div>
   </section>
 </template>

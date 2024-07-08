@@ -3,6 +3,9 @@ import { ref, reactive, computed } from 'vue'
 import { NModal, NInput, NScrollbar, NDivider, NCheckbox, NForm, NFormItem } from 'naive-ui'
 import { Search, Delete } from '@icon-park/vue-next'
 import { ServeCreateGroup, ServeInviteGroup, ServeGetInviteFriends } from '@/api/group'
+import grpcClient from "@/grpc-client";
+import {gen_grpc} from "@/gen_grpc/api";
+import {setAccessToken, setMyUid} from "@/utils/auth";
 
 const emit = defineEmits(['close', 'on-submit', 'on-invite'])
 const props = defineProps({
@@ -36,11 +39,12 @@ const checkedFilter = computed(() => {
 })
 
 const isCanSubmit = computed(() => {
-  if (props.gid > 0) {
-    return !checkedFilter.value.length
-  }
-
-  return !(model.name.trim() && checkedFilter.value.length)
+  return false
+  // if (props.gid > 0) {
+  //   return !checkedFilter.value.length
+  // }
+  //
+  // return !(model.name.trim() && checkedFilter.value.length)
 })
 
 const onReset = () => {
@@ -112,12 +116,27 @@ const onInviteSubmit = (ids: number[]) => {
 }
 
 const onSubmit = () => {
-  const ids = checkedFilter.value.map((item) => item.id)
+
+  // const ids = checkedFilter.value.map((item) => item.id)
 
   if (props.gid == 0) {
-    onCreateSubmit(ids)
+    grpcClient.umGroupCreate(model.name)
+        .then((res: gen_grpc.UmGroupCreateRes) => {
+          if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+            onReset()
+            emit('on-submit', {})
+            window['$message'].success('创建成功')
+            isShowBox.value = false
+          } else {
+            window['$message'].warning(res.errCode)
+          }
+        })
+        .catch((err) => {
+          window['$message'].warning(err)
+          throw err
+        })
   } else {
-    onInviteSubmit(ids)
+    // onInviteSubmit(ids)
   }
 }
 
@@ -141,50 +160,50 @@ onLoad()
     }"
   >
     <section class="el-container launch-box">
-      <aside class="el-aside bdr-r" style="width: 280px" v-loading="loading">
-        <section class="el-container is-vertical height100">
-          <header class="el-header" style="height: 50px; padding: 16px">
-            <n-input placeholder="搜索" v-model:value="model.keywords" clearable>
-              <template #prefix>
-                <n-icon :component="Search" />
-              </template>
-            </n-input>
-          </header>
-          <main class="el-main o-hidden">
-            <n-scrollbar>
-              <div class="friend-items">
-                <div
-                  class="friend-item pointer"
-                  v-for="item in searchFilter"
-                  :key="item.id"
-                  @click="onTriggerContact(item)"
-                >
-                  <div class="avatar">
-                    <im-avatar
-                      class="pointer"
-                      :src="item.avatar"
-                      :size="25"
-                      :username="item.nickname"
-                    />
-                  </div>
+<!--      <aside class="el-aside bdr-r" style="width: 280px" v-loading="loading">-->
+<!--        <section class="el-container is-vertical height100">-->
+<!--          <header class="el-header" style="height: 50px; padding: 16px">-->
+<!--            <n-input placeholder="搜索" v-model:value="model.keywords" clearable>-->
+<!--              <template #prefix>-->
+<!--                <n-icon :component="Search" />-->
+<!--              </template>-->
+<!--            </n-input>-->
+<!--          </header>-->
+<!--          <main class="el-main o-hidden">-->
+<!--            <n-scrollbar>-->
+<!--              <div class="friend-items">-->
+<!--                <div-->
+<!--                  class="friend-item pointer"-->
+<!--                  v-for="item in searchFilter"-->
+<!--                  :key="item.id"-->
+<!--                  @click="onTriggerContact(item)"-->
+<!--                >-->
+<!--                  <div class="avatar">-->
+<!--                    <im-avatar-->
+<!--                      class="pointer"-->
+<!--                      :src="item.avatar"-->
+<!--                      :size="25"-->
+<!--                      :username="item.nickname"-->
+<!--                    />-->
+<!--                  </div>-->
 
-                  <div class="content">
-                    <span class="text-ellipsis">{{ item.nickname }}</span>
-                  </div>
+<!--                  <div class="content">-->
+<!--                    <span class="text-ellipsis">{{ item.nickname }}</span>-->
+<!--                  </div>-->
 
-                  <div class="checkbox">
-                    <n-checkbox
-                      size="small"
-                      :checked="item.checked"
-                      @update:checked="item.checked = !item.checked"
-                    />
-                  </div>
-                </div>
-              </div>
-            </n-scrollbar>
-          </main>
-        </section>
-      </aside>
+<!--                  <div class="checkbox">-->
+<!--                    <n-checkbox-->
+<!--                      size="small"-->
+<!--                      :checked="item.checked"-->
+<!--                      @update:checked="item.checked = !item.checked"-->
+<!--                    />-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </n-scrollbar>-->
+<!--          </main>-->
+<!--        </section>-->
+<!--      </aside>-->
 
       <main class="el-main">
         <section class="el-container is-vertical height100">
@@ -196,44 +215,44 @@ onLoad()
             </n-form>
           </header>
 
-          <header class="el-header" style="height: 50px">
-            <n-divider
-              title-placement="left"
-              style="margin-top: 15px; margin-bottom: 0; font-weight: 300"
-            >
-              邀请成员({{ checkedFilter.length }})
-            </n-divider>
-          </header>
+<!--          <header class="el-header" style="height: 50px">-->
+<!--            <n-divider-->
+<!--              title-placement="left"-->
+<!--              style="margin-top: 15px; margin-bottom: 0; font-weight: 300"-->
+<!--            >-->
+<!--              邀请成员({{ checkedFilter.length }})-->
+<!--            </n-divider>-->
+<!--          </header>-->
 
-          <main class="el-main o-hidden">
-            <n-scrollbar>
-              <div class="friend-items">
-                <div
-                  class="friend-item pointer"
-                  v-for="item in checkedFilter"
-                  :key="item.id"
-                  @click="onTriggerContact(item)"
-                >
-                  <div class="avatar">
-                    <im-avatar
-                      class="pointer"
-                      :src="item.avatar"
-                      :size="25"
-                      :username="item.nickname"
-                    />
-                  </div>
+<!--          <main class="el-main o-hidden">-->
+<!--            <n-scrollbar>-->
+<!--              <div class="friend-items">-->
+<!--                <div-->
+<!--                  class="friend-item pointer"-->
+<!--                  v-for="item in checkedFilter"-->
+<!--                  :key="item.id"-->
+<!--                  @click="onTriggerContact(item)"-->
+<!--                >-->
+<!--                  <div class="avatar">-->
+<!--                    <im-avatar-->
+<!--                      class="pointer"-->
+<!--                      :src="item.avatar"-->
+<!--                      :size="25"-->
+<!--                      :username="item.nickname"-->
+<!--                    />-->
+<!--                  </div>-->
 
-                  <div class="content">
-                    <span class="text-ellipsis">{{ item.nickname }}</span>
-                  </div>
+<!--                  <div class="content">-->
+<!--                    <span class="text-ellipsis">{{ item.nickname }}</span>-->
+<!--                  </div>-->
 
-                  <div class="checkbox">
-                    <n-icon :size="16" :component="Delete" />
-                  </div>
-                </div>
-              </div>
-            </n-scrollbar>
-          </main>
+<!--                  <div class="checkbox">-->
+<!--                    <n-icon :size="16" :component="Delete" />-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </n-scrollbar>-->
+<!--          </main>-->
         </section>
       </main>
     </section>

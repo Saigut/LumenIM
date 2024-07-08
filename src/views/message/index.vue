@@ -1,15 +1,14 @@
 <script lang="ts" setup>
-import { onUnmounted, computed } from 'vue'
-import { useDialogueStore } from '@/store'
+import {onUnmounted, computed, reactive, ref} from 'vue'
+import {useDialogueStore, useTalkStore} from '@/store'
 import IndexContent from './inner/IndexContent.vue'
 import IndexSider from './inner/IndexSider.vue'
 import IndexAmicable from './inner/IndexAmicable.vue'
 
 const dialogueStore = useDialogueStore()
-const indexName = computed(() => dialogueStore.index_name)
 
 onUnmounted(() => {
-  dialogueStore.$reset()
+  // dialogueStore.$reset()
 })
 </script>
 
@@ -29,7 +28,7 @@ onUnmounted(() => {
     </aside>
 
     <main class="el-main">
-      <component :is="indexName ? IndexContent : IndexAmicable" />
+      <component :is="dialogueStore.index_name !== '' ? IndexContent : IndexAmicable" />
     </main>
   </section>
 </template>

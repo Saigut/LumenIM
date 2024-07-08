@@ -1,6 +1,9 @@
 // 会话最后一条消息
+import { UserInfo, GroupInfo } from "@/store";
+import {Ref} from "vue";
+
 export interface ISessionLastMessage {
-  msg_id: string // 消息ID
+  msg_id: number // 消息ID
   sequence: number // 消息时序ID（消息排序）
   msg_type: number // 消息类型
   user_id: number // 发送者ID
@@ -24,14 +27,39 @@ export interface ISession {
   is_top: number // 置顶
   unread_num: number // 未读消息数
   updated_at: string // 最后发送时间
+  conv_msg_id: number
   content?: string // 消息内容
   last_message?: ISessionLastMessage
   draft_text?: string // 草稿文本
+  user_info?: Ref<UserInfo>
+  groupInfo?: Ref<UserInfo>
+}
+
+export function createISession(overrides: Partial<ISession> = {}): ISession {
+  return {
+    id: 0,
+    index_name: "",
+    talk_type: 0,
+    receiver_id: 0,
+    name: "Unnamed",
+    avatar: "default_avatar.png",
+    remark: "",
+    is_disturb: 0,
+    is_online: 0,
+    is_robot: 0,
+    is_top: 0,
+    unread_num: 0,
+    updated_at: new Date().toISOString(),
+    conv_msg_id: 0,
+    content: "",
+    draft_text: "",
+    ...overrides
+  };
 }
 
 // 消息记录
 export interface ITalkRecord {
-  msg_id: string
+  msg_id: number
   sequence: number
   talk_type: number
   msg_type: number
@@ -41,7 +69,7 @@ export interface ITalkRecord {
   avatar: string
   is_revoke: number
   is_mark: number
-  is_read: number
+  is_read: boolean
   content: string
   created_at: string
   extra: any
@@ -122,4 +150,30 @@ export interface ITalkRecordExtraImage {
   url: string
   width: number
   height: number
+}
+
+export interface ResourceData {
+  msg_type: number;
+  extra: {
+    content: string;
+    reply: {
+      msg_id: number;
+      nickname: string;
+      content: string;
+    };
+  };
+  msg_id: number;
+  user_id: number;
+  user_info: Ref<UserInfo>;
+  created_at: number;
+  is_read: boolean;
+  [key: string]: any;
+}
+
+export interface Resource {
+  sender_id: number;
+  receiver_id: number;
+  talk_type: number;
+  data: ResourceData;
+  is_read: boolean;
 }

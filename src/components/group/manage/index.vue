@@ -9,20 +9,19 @@ import ConfigTab from './ConfigTab.vue'
 
 const emit = defineEmits(['close'])
 
-defineProps({
-  gid: {
-    type: Number,
-    default: 0
-  }
-})
+interface Props {
+  gid: number;
+  groupState: any;
+}
+const props = defineProps<Props>();
 
 const isShowBox = ref(true)
 const tabIndex = ref(0)
 const menus = [
   { name: '群信息', component: DetailTab },
   { name: '群成员', component: MemberTab },
-  { name: '群公告', component: NoticeTab },
-  { name: '群申请', component: ApplyTab },
+  // { name: '群公告', component: NoticeTab },
+  // { name: '群申请', component: ApplyTab },
   { name: '群设置', component: ConfigTab }
 ]
 
@@ -59,7 +58,7 @@ const onMaskClick = () => {
       </aside>
 
       <main class="el-main">
-        <component :is="menus[tabIndex].component" :id="gid" @close="onMaskClick" />
+        <component :is="menus[tabIndex].component" :id="gid" :groupState="groupState" @close="onMaskClick" />
       </main>
     </section>
   </n-modal>
