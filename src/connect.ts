@@ -100,8 +100,11 @@ class ConnectGrpc {
   }
 
   handleUpdate(res: gen_grpc.GetUpdateListRes) {
-    // 根据返回的数据调用相应的事件处理函数
-    if (res.errCode !== gen_grpc.ErrCode.emErrCode_Ok) {
+    if (res.errCode == gen_grpc.ErrCode.emErrCode_Timeout) {
+      return true
+    }
+
+    if (res.errCode != gen_grpc.ErrCode.emErrCode_Ok) {
       console.error('接口返回错误')
       return false
     }

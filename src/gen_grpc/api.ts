@@ -10,6 +10,7 @@ export namespace gen_grpc {
     export enum ErrCode {
         emErrCode_Ok = 0,
         emErrCode_UnknownErr = 1,
+        emErrCode_Timeout = 2,
         emErrCode_SessNotExisted = 100,
         emErrCode_UserNotRegistered = 200,
         emErrCode_UserAlreadyRegistered = 201,
