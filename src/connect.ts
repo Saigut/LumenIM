@@ -1,12 +1,9 @@
 import {h, ref} from 'vue'
 import { NAvatar } from 'naive-ui'
 import {
-  useTalkStore,
   useUserStore,
   useDialogueStore,
-  friendApplyStore,
-  groupApplyStore,
-  entityGetUserById, entityGetGroupById, useEntityInfoStore, UserInfo
+  entityGetUserById, entityGetGroupById, useEntityInfoStore, relationReqStore, FriendReq
 } from '@/store'
 import { notifyIcon } from '@/constant/default'
 import WsSocket from './plugins/ws-socket'
@@ -273,7 +270,7 @@ class ConnectGrpc {
     if (data.msg.senderUid === useUserStore().uid) {
       return
     }
-    const item: FriendApplyItem = {
+    const item: FriendReq = {
       id: data.seqId,
       // user_id: data.receiverId.uid,
       friend_id: data.msg.senderUid,
@@ -283,7 +280,7 @@ class ConnectGrpc {
       created_at: data.msg.sentTsMs.toString(),
       userInfo: entityGetUserById(data.msg.senderUid)
     };
-    friendApplyStore().addItem(item)
+    relationReqStore().addFriendReq(item)
     window['$notification'].create({
       title: '好友申请通知',
       content: data.msg.msgContent,
@@ -309,7 +306,7 @@ class ConnectGrpc {
     if (data.msg.senderUid === useUserStore().uid) {
       return
     }
-    const item: GroupApplyItem = {
+    const item: GroupJoinReq = {
       id: data.seqId,
       user_id: data.msg.senderUid,
       group_id: data.receiverId.groupId,
@@ -321,7 +318,7 @@ class ConnectGrpc {
       userInfo: entityGetUserById(data.msg.senderUid),
       groupInfo: entityGetGroupById(data.receiverId.groupId)
     };
-    groupApplyStore().addItem(item)
+    relationReqStore().addGroupJoinReq(item)
     window['$notification'].create({
       title: '入群申请通知',
       content: '有新的入群申请，请注意查收',

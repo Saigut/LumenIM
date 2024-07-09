@@ -11,7 +11,7 @@ interface TalkStoreState {
   items: ISession[]
 }
 
-export const useTalkStore = defineStore('talk', {
+export const useTalkStore = defineStore('storeConvList', {
   state: (): TalkStoreState => {
     return {
       // 加载状态[1:未加载;2:加载中;3:加载完成;4:加载失败;]

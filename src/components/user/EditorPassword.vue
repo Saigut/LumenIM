@@ -4,8 +4,6 @@ import { NModal, NForm, NFormItem, NInput, NButton } from 'naive-ui'
 import { ServeUpdatePassword } from '@/api/user'
 import grpcClient from "@/grpc-client";
 import {gen_grpc} from "@/gen_grpc/api";
-import {setAccessToken, setMyUid} from "@/utils/auth";
-import CryptoJS from "crypto-js";
 import {calPassHash} from "@/utils/util_ts";
 
 defineProps(['modelValue'])

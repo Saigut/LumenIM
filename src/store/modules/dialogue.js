@@ -10,7 +10,7 @@ import { useEditorStore } from './editor'
 // 键盘消息事件定时器
 let keyboardTimeout = null
 
-export const useDialogueStore = defineStore('dialogue', {
+export const useDialogueStore = defineStore('storeConvMsg', {
   state: () => {
     return {
       // 对话索引（聊天对话的唯一索引）

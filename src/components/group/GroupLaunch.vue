@@ -5,7 +5,6 @@ import { Search, Delete } from '@icon-park/vue-next'
 import { ServeCreateGroup, ServeInviteGroup, ServeGetInviteFriends } from '@/api/group'
 import grpcClient from "@/grpc-client";
 import {gen_grpc} from "@/gen_grpc/api";
-import {setAccessToken, setMyUid} from "@/utils/auth";
 
 const emit = defineEmits(['close', 'on-submit', 'on-invite'])
 const props = defineProps({

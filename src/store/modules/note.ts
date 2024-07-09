@@ -80,7 +80,7 @@ interface NoteStoreState {
   }
 }
 
-export const useNoteStore = defineStore('note', {
+export const useNoteStore = defineStore('storeNote', {
   state: (): NoteStoreState => {
     return {
       tags: [],

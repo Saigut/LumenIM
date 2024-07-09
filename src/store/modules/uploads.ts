@@ -27,7 +27,7 @@ function fileSlice(file: File, uploadId: string, eachSize: number) {
   return items
 }
 
-export const useUploadsStore = defineStore('uploads', {
+export const useUploadsStore = defineStore('storeUploads', {
   state: () => {
     return {
       isShow: false,

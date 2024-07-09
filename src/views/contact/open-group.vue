@@ -8,7 +8,6 @@ import { ServeGroupOvertList } from '@/api/group'
 import { debounce } from '@/utils/common'
 import grpcClient from "@/grpc-client";
 import {gen_grpc} from "@/gen_grpc/api";
-import {setAccessToken, setMyUid} from "@/utils/auth";
 
 const apply = reactive({
   isShow: false,

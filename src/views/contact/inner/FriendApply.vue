@@ -5,29 +5,19 @@ import { Close, CheckSmall } from '@icon-park/vue-next'
 import { ServeGetContactApplyRecords, ServeApplyAccept, ServeApplyDecline } from '@/api/contact'
 import { throttle } from '@/utils/common'
 import { parseTime } from '@/utils/datetime'
-import { useUserStore, friendApplyStore } from '@/store'
+import {useUserStore, relationReqStore, FriendReq} from '@/store'
 import { useInject } from '@/hooks'
 import grpcClient from "@/grpc-client";
 import {gen_grpc} from "@/gen_grpc/api";
-import {setAccessToken, setMyUid} from "@/utils/auth";
 
-type Item = {
-  id: number
-  // user_id: number
-  friend_id: number
-  remark: string
-  nickname: string
-  avatar: string
-  created_at: string
-}
 
 const userStore = useUserStore()
 const { showUserInfoModal } = useInject()
 // const items = ref<Item[]>([])
-const itemStore = friendApplyStore();
+const itemStore = relationReqStore();
 const friendApplyItems = computed({
-  get: () => itemStore.items,
-  set: (value: Item[]) => itemStore.setItems(value)
+  get: () => itemStore.friendReqs,
+  set: (value: FriendReq[]) => itemStore.setFriendReqs(value)
 });
 
 const loading = ref(true)
@@ -40,17 +30,17 @@ const onLoadData = (isClearTip = false) => {
   loading.value = false
 }
 
-const onInfo = (item: Item) => {
+const onInfo = (item: FriendReq) => {
   showUserInfoModal(item.friend_id)
 }
 
-const onAccept = throttle((item: Item) => {
+const onAccept = throttle((item: FriendReq) => {
   let loading = window['$message'].loading('请稍等，正在处理')
 
   grpcClient.umContactAccept(item.friend_id)
       .then((res: gen_grpc.UmContactAcceptRes) => {
         if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
-          itemStore.delFriendItem(item.friend_id)
+          itemStore.delFriendReq(item.friend_id)
           window['$message'].success('已同意')
         } else {
           window['$message'].info('操作失败: ' + gen_grpc.ErrCode[res.errCode])
@@ -72,7 +62,7 @@ const onDecline = throttle((item) => {
   grpcClient.umContactReject(item.friend_id)
       .then((res: gen_grpc.UmContactRejectRes) => {
         if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
-          itemStore.delFriendItem(item.friend_id)
+          itemStore.delFriendReq(item.friend_id)
           window['$message'].success('已拒绝')
         } else {
           window['$message'].info(res.errCode)

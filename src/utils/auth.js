@@ -48,11 +48,3 @@ export function setLocalSeqId(newSeqId) {
   useUserStore().seqId = newSeqId
   // localStorage.setItem('localSeqId', newSeqId.toString())
 }
-
-export function getMyUid() {
-  return Number(localStorage.getItem('myUid') || 0)
-}
-
-export function setMyUid(uid) {
-  localStorage.setItem('myUid', uid.toString())
-}

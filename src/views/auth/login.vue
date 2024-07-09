@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { NDivider, NForm, NFormItem } from 'naive-ui'
 import grpcClient from '@/grpc-client'
 import { gen_grpc } from '@/gen_grpc/api'
-import {setAccessToken, setMyUid} from '@/utils/auth'
+import {setAccessToken} from '@/utils/auth'
 import { palyMusic } from '@/utils/talk'
 import { useUserStore } from '@/store'
 import {calPassHash} from "@/utils/util_ts";
@@ -40,7 +40,7 @@ const onLogin = () => {
       .then((res: gen_grpc.SessUserLoginRes) => {
         if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
           window['$message'].success('登录成功')
-          setMyUid(res.uid)
+          userStore.$reset()
           userStore.uid = res.uid
           setAccessToken(res.sessId)
           router.push(redirect)

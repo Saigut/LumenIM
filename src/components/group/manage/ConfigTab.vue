@@ -4,7 +4,6 @@ import { NForm, NFormItem, NSwitch, NPopconfirm } from 'naive-ui'
 import { ServeDismissGroup, ServeMuteGroup, ServeGroupDetail, ServeOvertGroup } from '@/api/group'
 import grpcClient from "@/grpc-client";
 import {gen_grpc} from "@/gen_grpc/api";
-import {setAccessToken, setMyUid} from "@/utils/auth";
 
 const emit = defineEmits(['close'])
 const props = defineProps({

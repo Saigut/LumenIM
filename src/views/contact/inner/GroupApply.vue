@@ -2,32 +2,20 @@
 import { ref, onMounted, h, computed } from 'vue'
 import { NInput } from 'naive-ui'
 import { Close, CheckSmall } from '@icon-park/vue-next'
-import { groupApplyStore, useUserStore, entityGetUserById} from '@/store'
-import { ServeGetGroupApplyAll, ServeDeleteGroupApply, ServeAgreeGroupApply } from '@/api/group'
+import { useUserStore, relationReqStore, GroupJoinReq } from '@/store'
 import { throttle } from '@/utils/common'
 import { parseTime } from '@/utils/datetime'
 import { useUtil, useInject } from '@/hooks'
 import grpcClient from "@/grpc-client";
 import {gen_grpc} from "@/gen_grpc/api";
 
-interface Item {
-  id: number
-  user_id: number
-  group_id: number
-  avatar: string
-  nickname: string
-  remark: string
-  created_at: string
-  group_name: string
-}
-
 const { useMessage, useDialog } = useUtil()
 const { showUserInfoModal } = useInject()
 const userStore = useUserStore()
-const itemStore = groupApplyStore();
+const itemStore = relationReqStore();
 const groupApplyItems = computed({
-  get: () => itemStore.items,
-  set: (value: Item[]) => itemStore.setItems(value)
+  get: () => itemStore.groupJoinReqs,
+  set: (value: GroupJoinReq[]) => itemStore.setGroupJoinReqs(value)
 });
 const loading = ref(true)
 
@@ -44,18 +32,18 @@ const onLoadData = () => {
   //   })
 }
 
-const onInfo = (item: Item) => {
+const onInfo = (item: GroupJoinReq) => {
   showUserInfoModal(item.user_id)
 }
 
-const onAgree = throttle((item: Item) => {
+const onAgree = throttle((item: GroupJoinReq) => {
   let loading = useMessage.loading('请稍等，正在处理')
 
   console.log(item)
   grpcClient.umGroupAccept(item.group_id, item.user_id)
       .then((res: gen_grpc.UmGroupAcceptRes) => {
         if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
-          itemStore.delItem(item.group_id, item.user_id)
+          itemStore.delGroupJoinReq(item.group_id, item.user_id)
           useMessage.success('已同意')
         } else {
           useMessage.info('操作失败: ' + gen_grpc.ErrCode[res.errCode])
@@ -71,7 +59,7 @@ const onAgree = throttle((item: Item) => {
       })
 }, 1000)
 
-const onDelete = (item: Item) => {
+const onDelete = (item: GroupJoinReq) => {
   let remark = ''
   let dialog = useDialog.create({
     title: '拒绝入群申请',
@@ -93,7 +81,7 @@ const onDelete = (item: Item) => {
       grpcClient.umGroupReject(item.group_id, item.user_id)
           .then((res: gen_grpc.UmGroupRejectRes) => {
             if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
-              itemStore.delItem(item.group_id, item.user_id)
+              itemStore.delGroupJoinReq(item.group_id, item.user_id)
               useMessage.success('已拒绝')
             } else {
               useMessage.info('请求失败: ' + gen_grpc.ErrCode[res.errCode])

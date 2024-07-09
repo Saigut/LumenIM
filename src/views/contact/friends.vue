@@ -12,7 +12,6 @@ import {createUserInfo, useDialogueStore, UserInfo, useTalkStore} from '@/store'
 import { useRouter } from 'vue-router'
 import grpcClient from "@/grpc-client";
 import {gen_grpc} from "@/gen_grpc/api";
-import {setAccessToken, setMyUid} from "@/utils/auth";
 
 const router = useRouter()
 const talkStore = useTalkStore()

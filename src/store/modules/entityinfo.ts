@@ -70,7 +70,7 @@ interface EntityInfoState {
 }
 
 
-export const useEntityInfoStore = defineStore('entityInfo', {
+export const useEntityInfoStore = defineStore('storeEntity', {
   persist: true,
   state: (): EntityInfoState => {
     return {

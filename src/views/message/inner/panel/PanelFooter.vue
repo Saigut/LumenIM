@@ -16,7 +16,6 @@ import HistoryRecord from '@/components/talk/HistoryRecord.vue'
 import { ServeUploadImage } from '@/api/upload'
 import grpcClient from "@/grpc-client";
 import { gen_grpc } from "@/gen_grpc/api";
-import { setAccessToken, setMyUid } from "@/utils/auth";
 import { generateRandomNumberWithTimestamp } from "@/utils/util_ts";
 
 const talkStore = useTalkStore()

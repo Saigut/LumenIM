@@ -7,7 +7,8 @@ import { storage } from '@/utils/storage'
 import grpcClient from "@/grpc-client";
 import { gen_grpc } from "@/gen_grpc/api";
 import {FriendApplyItem, GroupApplyItem} from "@/types/global";
-import {useTalkStore, useDialogueStore, useEntityInfoStore} from '@/store'
+import {useTalkStore, useDialogueStore, useEntityInfoStore, UserInfo, GroupInfo} from '@/store'
+import {reactive, Ref} from "vue";
 
 interface UserStoreState {
   uid: number
@@ -25,7 +26,7 @@ interface UserStoreState {
   seqId: number
 }
 
-export const useUserStore = defineStore('user', {
+export const useUserStore = defineStore('storeUser', {
   persist: true,
   state: (): UserStoreState => {
     return {
@@ -64,8 +65,7 @@ export const useUserStore = defineStore('user', {
             this.$reset()
             useDialogueStore().$reset()
             useTalkStore().$reset()
-            friendApplyStore().$reset()
-            groupApplyStore().$reset()
+            relationReqStore().$reset()
             useEntityInfoStore().$reset()
             storage.remove('user_info')
             delAccessToken()
@@ -105,43 +105,59 @@ export const useUserStore = defineStore('user', {
   }
 })
 
-export const friendApplyStore = defineStore('friendApply', {
-  state: () => ({
-    items: [] as FriendApplyItem[],
-  }),
-  actions: {
-    setItems(newItems: FriendApplyItem[]) {
-      this.items = newItems;
-    },
-    addItem(item: FriendApplyItem) {
-      this.items.push(item);
-    },
-    clearItems() {
-      this.items = [];
-    },
-    delFriendItem(friend_id: number) {
-      this.items = this.items.filter(item => item.friend_id !== friend_id);
-    }
-  },
-  persist: true
-});
+export interface FriendReq {
+  id: number
+  friend_id: number
+  remark: string
+  nickname: string
+  avatar: string
+  created_at: string
+  userInfo: Ref<UserInfo>
+}
 
-export const groupApplyStore = defineStore('groupApply', {
+export interface GroupJoinReq {
+  id: number
+  user_id: number
+  group_id: number
+  remark: string
+  group_name: string
+  nickname: string
+  avatar: string
+  created_at: string
+  userInfo: Ref<UserInfo>
+  groupInfo: Ref<GroupInfo>
+}
+
+export const relationReqStore = defineStore('storeRelationReq', {
   state: () => ({
-    items: [] as GroupApplyItem[],
+    friendReqs: [] as FriendReq[],
+    groupJoinReqs: [] as GroupJoinReq[],
   }),
   actions: {
-    setItems(newItems: GroupApplyItem[]) {
-      this.items = newItems;
+    setFriendReqs(newReq: FriendReq[]) {
+      this.friendReqs = newReq.map(req => reactive(req));
     },
-    addItem(item: GroupApplyItem) {
-      this.items.push(item);
+    addFriendReq(req: FriendReq) {
+      this.friendReqs.push(reactive(req));
     },
-    clearItems() {
-      this.items = [];
+    clearFriendReqs() {
+      this.friendReqs = [];
     },
-    delItem(groupId: number, userId: number) {
-      this.items = this.items.filter(item => (item.group_id !== groupId) || (item.user_id !== userId));
+    delFriendReq(friend_id: number) {
+      this.friendReqs = this.friendReqs.filter(req => req.friend_id !== friend_id);
+    },
+
+    setGroupJoinReqs(newReq: GroupJoinReq[]) {
+      this.groupJoinReqs = newReq.map(req => reactive(req));
+    },
+    addGroupJoinReq(request: GroupJoinReq) {
+      this.groupJoinReqs.push(reactive(request));
+    },
+    clearGroupJoinReqs() {
+      this.groupJoinReqs = [];
+    },
+    delGroupJoinReq(groupId: number, userId: number) {
+      this.groupJoinReqs = this.groupJoinReqs.filter(req => req.group_id !== groupId || req.user_id !== userId);
     }
   },
   persist: true

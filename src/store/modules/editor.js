@@ -4,7 +4,7 @@ import { ServeCollectEmoticon } from '@/api/chat'
 
 const message = window['$message']
 
-export const useEditorStore = defineStore('editor', {
+export const useEditorStore = defineStore('storeMsgInput', {
   state: () => {
     return {
       // 表包相关

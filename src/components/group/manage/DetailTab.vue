@@ -5,7 +5,6 @@ import AvatarCropper from '@/components/base/AvatarCropper.vue'
 import { ServeGroupDetail, ServeEditGroup } from '@/api/group'
 import grpcClient from "@/grpc-client";
 import {gen_grpc} from "@/gen_grpc/api";
-import {setAccessToken, setMyUid} from "@/utils/auth";
 import {useEntityInfoStore} from "@/store";
 
 const emit = defineEmits(['close'])
