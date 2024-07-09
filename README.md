@@ -1,21 +1,12 @@
-# Lumen IM 即时聊天
-
-<img alt="GitHub stars badge" src="https://img.shields.io/github/stars/gzydong/LumenIM"> <img alt="GitHub forks badge" src="https://img.shields.io/github/forks/gzydong/LumenIM"> <img alt="GitHub license badge" src="https://img.shields.io/github/license/gzydong/LumenIM">
+# Talk Client
 
 ### 项目介绍
 
-Lumen IM 是一个网页版在线聊天项目，前端使用 Naive UI + Vue3，后端采用 GO 开发。
-
-### 功能模块
-
-- 支持私聊及群聊
-- 支持多种聊天消息类型 例如:文本消息、代码块、群投票、图片及其它类型文件，并支持文件下载
-- 支持聊天消息撤回、删除(批量删除)、转发消息(逐条转发、合并转发)
-- 支持编写笔记
+此项目修改自 [Lumen IM](https://github.com/gzydong/LumenIM)， 是 [Saigut/social_server](https://github.com/Saigut/social_server) 的客户端。
 
 ### 项目预览
 
-- 地址： [http://im.gzydong.com](http://im.gzydong.com)
+- 地址： [letstalk.ink](https://letstalk.ink)
 
 ### 项目安装
 
@@ -23,9 +14,9 @@ Lumen IM 是一个网页版在线聊天项目，前端使用 Naive UI + Vue3，�
 
 ```bash
 ## 克隆项目源码包
-git clone https://gitee.com/gzydong/LumenIM.git
+git clone https://gitee.com/Saigut/LumenIM
 或
-git clone https://github.com/gzydong/LumenIM.git
+git clone https://github.com/Saigut/LumenIM
 
 ## 安装项目依赖扩展组件
 yarn install
@@ -42,15 +33,10 @@ yarn build
 yarn electron:build
 ```
 
-###### 修改 .env 配置信息
+###### 关于请求转发
+需要将 `/gen_grpc.GrpcApi` 请求转发到 social_server。
 
-```env
-VITE_BASE_API=http://127.0.0.1:9503
-VITE_SOCKET_API=ws://127.0.0.1:9504
-```
-
-###### 关于 Nginx 的一些配置
-
+以 nginx 为例，如下：
 ```nginx
 server {
     listen       80;
@@ -61,6 +47,15 @@ server {
 
     location / {
       try_files $uri $uri/ /index.html;
+    }
+    
+    location /gen_grpc.GrpcApi {
+        proxy_pass http://localhost:10080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Content-Type $http_content_type;
     }
 
     location ~ .*\.(gif|jpg|jpeg|png|bmp|swf|flv|ico)$ {
@@ -73,15 +68,4 @@ server {
 }
 ```
 
-### 项目源码
-
-| 代码仓库 | 前端源码                           | 后端源码                           |
-| -------- | ---------------------------------- | ---------------------------------- |
-| Github   | https://github.com/gzydong/LumenIM | https://github.com/gzydong/go-chat |
-| 码云     | https://gitee.com/gzydong/LumenIM  | https://gitee.com/gzydong/go-chat  |
-
-#### 联系方式
-
-QQ作者 : 837215079
-
-### 如果你觉得还不错，请 Star , Fork 给作者鼓励一下。
+开发环境可以参考 [vite.config.ts](vite.config.ts) 中的 `server.proxy` 进行配置。
