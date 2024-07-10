@@ -2,23 +2,29 @@ import { watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSettingsStore } from '@/store'
 import { isLoggedIn } from '@/utils/auth'
-import ws from '@/connect'
+import {startNewConnect, stopConnect} from "@/connect";
+// import ws from '@/connect'
 
 export const useConnectStatus = () => {
   const settingsStore = useSettingsStore()
-  const router = useRouter()
+  // const router = useRouter()
 
   watchEffect(() => {
     if (settingsStore.isLeaveWeb) {
       return
     }
 
-    const pathname = router.currentRoute.value.path
+    // const pathname = router.currentRoute.value.path
 
-    const paths = ['/auth/login', '/auth/register', '/auth/forget']
+    // const paths = ['/auth/login', '/auth/register', '/auth/forget']
 
-    if (!paths.includes(pathname) && isLoggedIn()) {
-      !ws.isConnect() && ws.connect()
+    // if (!paths.includes(pathname) && isLoggedIn()) {
+    //   !ws.isConnect() && ws.connect()
+    // }
+    if (isLoggedIn()) {
+      startNewConnect()
+    } else {
+      stopConnect()
     }
   })
 

@@ -1,6 +1,5 @@
 import Base from './base'
 import { nextTick } from 'vue'
-import ws from '@/connect'
 import { parseTime } from '@/utils/datetime'
 import * as message from '@/constant/message'
 import { formatTalkItem, palyMusic, formatTalkRecord } from '@/utils/talk'

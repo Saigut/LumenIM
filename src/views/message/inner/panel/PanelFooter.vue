@@ -7,7 +7,7 @@ import {
   useUploadsStore,
   useEditorStore
 } from '@/store'
-import ws from '@/connect'
+// import ws from '@/connect'
 import { ServePublishMessage, ServeSendVote } from '@/api/chat'
 import { throttle, getVideoImage } from '@/utils/common'
 import Editor from '@/components/editor/Editor.vue'
@@ -182,10 +182,10 @@ const onSendMixedEvent = ({ data, callBack }) => {
 }
 
 const onKeyboardPush = throttle(() => {
-  ws.emit('im.message.keyboard', {
-    sender_id: props.uid,
-    receiver_id: props.receiver_id
-  })
+  // ws.emit('im.message.keyboard', {
+  //   sender_id: props.uid,
+  //   receiver_id: props.receiver_id
+  // })
 }, 3000)
 
 // 编辑器输入事件

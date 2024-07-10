@@ -12,7 +12,7 @@ import {
 } from 'naive-ui'
 import hljs from 'highlight.js/lib/core'
 import { useUserStore, useTalkStore } from '@/store'
-import ws from '@/connect'
+import {startNewConnect} from '@/connect'
 import { bus } from '@/utils/event-bus'
 import { isLoggedIn } from '@/utils/auth'
 import { NotificationApi, MessageApi, DialogApi } from '@/components/common'
@@ -50,7 +50,8 @@ const onChangeRemark = (value: string) => {
 const init = () => {
   if (!isLoggedIn()) return
 
-  ws.connect()
+  // ws.connect()
+  startNewConnect()
   userStore.loadSetting()
 }
 
@@ -58,7 +59,7 @@ init()
 useVisibilityChange()
 useAccessPrompt()
 useUnreadMessage()
-useConnectStatus()
+// useConnectStatus()
 useClickEvent()
 </script>
 

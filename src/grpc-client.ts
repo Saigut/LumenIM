@@ -1,11 +1,20 @@
 import {getAccessToken, getLocalSeqId} from "@/utils/auth";
 import { gen_grpc } from '@/gen_grpc/api'
-import { GrpcApiClient } from '@/gen_grpc/ApiServiceClientPb'
 
 // Initialize the client with the hostname of your gRPC server
-const { protocol, hostname, port } = window.location;
-const address = `${protocol}//${hostname}:${port}`;
-const promiseClient = new gen_grpc.GrpcApiClient(address);
+let grpcClientInstance: gen_grpc.GrpcApiClient | null = null;
+const createGrpcClient = (): void => {
+    const { protocol, hostname, port } = window.location;
+    const address = `${protocol}//${hostname}:${port}`;
+    grpcClientInstance = new gen_grpc.GrpcApiClient(address);
+};
+const getGrpcClient = (): gen_grpc.GrpcApiClient => {
+    if (!grpcClientInstance) {
+        createGrpcClient();
+    }
+    return <gen_grpc.GrpcApiClient>grpcClientInstance;
+};
+const promiseClient = getGrpcClient();
 
 const realChatSendMsg = async (isGroupMsg, receiverId, msgStr, randMsgId) => {
     try {

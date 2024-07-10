@@ -24,15 +24,7 @@ import {
   ChatMsgSysGroupMemberKicked,
   ChatMsgSysGroupMemberQuit
 } from "@/constant/message";
-import {FriendApplyItem, GroupApplyItem} from "@/types/global";
 
-const urlCallback = () => {
-  if (!isLoggedIn()) {
-    window.location.reload()
-  }
-
-  return `${import.meta.env.VITE_SOCKET_API}/wss/default.io?token=${getAccessToken()}`
-}
 
 class ConnectGrpc {
   private polling: boolean
@@ -342,5 +334,19 @@ class ConnectGrpc {
   }
 }
 
-// 导出单例
-export default new ConnectGrpc()
+let curConnect: ConnectGrpc | null = null
+
+export function stopConnect() {
+  if (curConnect) {
+    curConnect.disconnect()
+  }
+  curConnect = null
+}
+
+export function startNewConnect() {
+  if (curConnect) {
+    curConnect.disconnect()
+  }
+  curConnect = new ConnectGrpc()
+  curConnect.connect()
+}

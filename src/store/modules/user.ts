@@ -9,6 +9,7 @@ import { gen_grpc } from "@/gen_grpc/api";
 import {FriendApplyItem, GroupApplyItem} from "@/types/global";
 import {useTalkStore, useDialogueStore, useEntityInfoStore, UserInfo, GroupInfo} from '@/store'
 import {reactive, Ref} from "vue";
+import {stopConnect} from "@/connect";
 
 interface UserStoreState {
   uid: number
@@ -53,6 +54,7 @@ export const useUserStore = defineStore('storeUser', {
     },
 
     logoutLogin() {
+      stopConnect()
       grpcClient.sessUserLogout()
           .then((res: gen_grpc.SessUserLogoutRes) => {
             if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {

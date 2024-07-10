@@ -8,6 +8,7 @@ import {setAccessToken} from '@/utils/auth'
 import { palyMusic } from '@/utils/talk'
 import { useUserStore } from '@/store'
 import {calPassHash} from "@/utils/util_ts";
+import {startNewConnect} from "@/connect";
 const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
@@ -43,6 +44,7 @@ const onLogin = () => {
           userStore.$reset()
           userStore.uid = res.uid
           setAccessToken(res.sessId)
+          startNewConnect()
           router.push(redirect)
         } else {
           window['$message'].warning('登录失败：' + gen_grpc.ErrCode[res.errCode])
