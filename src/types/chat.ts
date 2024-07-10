@@ -31,8 +31,8 @@ export interface ISession {
   content?: string // 消息内容
   last_message?: ISessionLastMessage
   draft_text?: string // 草稿文本
-  user_info?: Ref<UserInfo>
-  groupInfo?: Ref<UserInfo>
+  userInfo?: Ref<UserInfo>
+  groupInfo?: Ref<GroupInfo>
 }
 
 export function createISession(overrides: Partial<ISession> = {}): ISession {

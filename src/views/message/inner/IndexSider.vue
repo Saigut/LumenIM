@@ -31,19 +31,20 @@ const searchKeyword = ref('')
 const topItems = computed((): ISession[] => talkStore.topItems)
 const unreadNum = computed(() => talkStore.talkUnreadNum)
 
-// const items = computed((): ISession[] => {
-//   if (searchKeyword.value.length === 0) {
-//     return talkStore.talkItems
-//   }
-//
-//   return talkStore.talkItems.filter((item: ISession) => {
-//     let keyword = item.remark || item.name
-//
-//     return keyword.toLowerCase().indexOf(searchKeyword.value.toLowerCase()) != -1
-//   })
-// })
-
-const items = ref(talkStore.talkItems)
+const items = computed((): ISession[] => {
+  if (searchKeyword.value.length === 0) {
+    return talkStore.talkItems
+  }
+  return talkStore.talkItems.filter((item: ISession) => {
+    let keyword = '';
+    if (item.talk_type === 1) {
+      keyword = item.userInfo?.nickname || item.userInfo?.username || '';
+    } else if (item.talk_type === 2) {
+      keyword = item.groupInfo?.name || '';
+    }
+    return keyword.toLowerCase().includes(searchKeyword.value.toLowerCase());
+  })
+})
 
 // 列表加载状态
 const loadStatus = computed(() => talkStore.loadStatus)
@@ -227,7 +228,11 @@ onMounted(() => {
         <template v-else>
           <div>
             <n-icon size="20"/>
-            <n-empty description="空空如也~"/>
+            <n-empty size="20" description="空空如也~">
+              <template #icon>
+                <img src="@/assets/image/no-data.svg" alt="" />
+              </template>
+            </n-empty>
           </div>
         </template>
       </template>
