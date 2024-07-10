@@ -2,20 +2,34 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { NForm, NFormItem, NInput } from 'naive-ui'
-import { ServeRegister } from '@/api/auth'
 import { ServeSendVerifyCode } from '@/api/common'
 import { isMobile } from '@/utils/validate'
 import { useSmsLock } from '@/hooks'
 import grpcClient from '@/grpc-client'
 import {gen_grpc} from "@/gen_grpc/api";
-import CryptoJS from 'crypto-js';
-import {calPassHash} from "@/utils/util_ts";
+import { calPassHash } from "@/utils/util_ts";
 
 // 初始化短信按钮锁
 const { lockTime, start } = useSmsLock('REGISTER_SMS', 60)
 
 const router = useRouter()
 const formRef = ref()
+
+const validatePassword = (password: string): boolean => {
+  const hasLetter = /[A-Za-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  const isValidLength = password.length >= 8 && password.length <= 16;
+
+  const validCombinations = [
+    hasLetter && hasNumber,
+    hasLetter && hasSpecialChar,
+    hasNumber && hasSpecialChar,
+  ];
+
+  return isValidLength && validCombinations.some(combination => combination);
+}
+
 const rules = {
   nickname: {
     required: true,
@@ -24,32 +38,44 @@ const rules = {
   },
   username: {
     required: true,
-    // @ts-ignore
-    // validator(rule: any, value: string) {
-    //   if (!value) {
-    //     return new Error('手机号不能为空！')
-    //   } else if (!isMobile(value)) {
-    //     return new Error('请正确填写手机号！')
-    //   }
-    //
-    //   return true
-    // },
+    validator(rule: any, value: string) {
+      if (!value) {
+        return new Error('用户名不能为空！')
+      } else if (!/^[a-zA-Z][a-zA-Z0-9_-]{5,19}$/.test(value)) {
+        return new Error('用户名必须为6-20个字符，仅包含字母、数字、下划线和短横线，且以字母开头')
+      }
+      return true
+    },
     trigger: ['blur', 'input']
   },
   password: {
     required: true,
-    trigger: ['blur', 'input'],
-    message: '密码不能为空！'
+    validator(rule: any, value: string) {
+      if (!value) {
+        return new Error('密码不能为空！')
+      } else if (!validatePassword(value)) {
+        return new Error('密码必须为8-16个字符，且包含字母、数字和特殊字符中的至少两种组合')
+      }
+      return true
+    },
+    trigger: ['blur', 'input']
+  },
+  email: {
+    required: true,
+    validator(rule: any, value: string) {
+      if (!value) {
+        return new Error('邮箱不能为空！')
+      } else if (!/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(value)) {
+        return new Error('请输入正确的邮箱格式')
+      }
+      return true
+    },
+    trigger: ['blur', 'input']
   },
   sms_code: {
     required: true,
     trigger: ['blur', 'input'],
     message: '验证码不能为空！'
-  },
-  email: {
-    required: true,
-    trigger: ['blur', 'input'],
-    message: '邮箱不能为空！'
   }
 }
 
@@ -67,18 +93,18 @@ const onRegister = () => {
 
   grpcClient.umRegister(model.username, model.nickname, calPassHash(model.password), model.email)
       .then((res: gen_grpc.UmRegisterRes) => {
-        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) { // 假设返回的响应对象有一个 getCode() 方法
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
           window['$message'].success('注册成功');
 
           setTimeout(() => {
             router.push('/auth/login');
           }, 500);
         } else {
-          window['$message'].warning(res.errCode); // 假设返回的响应对象有一个 getMessage() 方法
+          window['$message'].error('注册失败：' + gen_grpc.ErrCode[res.errCode]);
         }
       })
       .catch((error) => {
-        window['$message'].error(`注册失败: ${error.message}`);
+        window['$message'].error('请求失败：' + error)
         throw error;
       })
       .finally(() => {
@@ -137,10 +163,10 @@ const onSendSms = () => {
       <n-form ref="formRef" size="large" :model="model" :rules="rules">
         <n-form-item path="username" :show-label="false">
           <n-input
-            placeholder="用户名"
-            v-model:value="model.username"
-            :maxlength="11"
-            @keydown.enter="onValidate"
+              placeholder="用户名"
+              v-model:value="model.username"
+              :maxlength="20"
+              @keydown.enter="onValidate"
           />
         </n-form-item>
 
@@ -158,11 +184,11 @@ const onSendSms = () => {
 
         <n-form-item path="password" :show-label="false">
           <n-input
-            placeholder="设置密码"
-            type="password"
-            show-password-on="click"
-            v-model:value="model.password"
-            @keydown.enter="onValidate"
+              placeholder="设置密码"
+              type="password"
+              show-password-on="click"
+              v-model:value="model.password"
+              @keydown.enter="onValidate"
           />
         </n-form-item>
 
@@ -183,12 +209,12 @@ const onSendSms = () => {
         </n-form-item>
 
         <n-button
-          type="primary"
-          size="large"
-          block
-          class="mt-t20"
-          @click="onValidate"
-          :loading="model.loading"
+            type="primary"
+            size="large"
+            block
+            class="mt-t20"
+            @click="onValidate"
+            :loading="model.loading"
         >
           立即注册
         </n-button>

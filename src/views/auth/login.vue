@@ -51,7 +51,7 @@ const onLogin = () => {
         }
       })
       .catch((err) => {
-        window['$message'].warning('请求失败：' + gen_grpc.ErrCode[err])
+        window['$message'].warning('请求失败：' + err)
         throw err
       })
       .finally(() => {
