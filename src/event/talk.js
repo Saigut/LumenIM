@@ -18,7 +18,7 @@ class Talk extends Base {
   /**
    * @var resource 资源
    */
-  // typs: ResourceData
+  // type: ResourceData
   resource
 
   /**

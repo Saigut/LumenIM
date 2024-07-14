@@ -101,10 +101,6 @@ class ConnectGrpc {
       return false
     }
 
-    if (getLocalSeqId() >= res.seqId) {
-      console.error('repeated message')
-      return true
-    }
 
     for (const msg of res.msgList) {
       if (!msg.has_msg) {
@@ -112,6 +108,10 @@ class ConnectGrpc {
         continue
       } else if (!msg.has_receiverId) {
         console.error('接收者ID为空')
+        continue
+      }
+      if (getLocalSeqId() >= msg.seqId) {
+        console.warn('repeated message')
         continue
       }
 
@@ -147,9 +147,9 @@ class ConnectGrpc {
           console.warn(`Unhandled message type: ${msg.msg.msgType}`);
           break;
       }
-    }
 
-    setLocalSeqId(res.seqId)
+      setLocalSeqId(msg.seqId)
+    }
 
     return true
   }

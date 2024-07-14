@@ -60,6 +60,10 @@ const onSendMessage = (data = {}, callBack: any) => {
     }
   }
 
+  if (!message.content.trim()) {
+    return
+  }
+
   const isGroupMsg: boolean = message.receiver.talk_type == 2
 
   grpcClient.generalChatSendMsg(isGroupMsg, message.receiver.receiver_id,

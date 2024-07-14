@@ -62,20 +62,22 @@ const onTabTalk = (item: ISession, follow = false) => {
   dialogueStore.setDialogue(item)
 
   // 清空消息未读数
-  grpcClient.generalChatMarkRead(item.talk_type == 2, item.receiver_id, item.conv_msg_id)
-      .then((res: gen_grpc.ChatMarkReadRes) => {
-    if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
-      talkStore.updateItem({
-        index_name: item.index_name,
-        unread_num: 0
-      })
-    } else {
-      console.log("failed to mark read: " + res.errCode)
-    }
-  }).catch((err) => {
-    console.log("failed to mark read: " + err)
-    throw err
-  })
+  if (item.unread_num > 0) {
+    grpcClient.generalChatMarkRead(item.talk_type == 2, item.receiver_id, item.conv_msg_id)
+        .then((res: gen_grpc.ChatMarkReadRes) => {
+          if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+            talkStore.updateItem({
+              index_name: item.index_name,
+              unread_num: 0
+            })
+          } else {
+            console.log("failed to mark read: " + res.errCode)
+          }
+        }).catch((err) => {
+      console.log("failed to mark read: " + err)
+      throw err
+    })
+  }
 
   talkStore.updateItem({
     index_name: item.index_name,

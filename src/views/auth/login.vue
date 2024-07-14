@@ -4,11 +4,12 @@ import { useRouter, useRoute } from 'vue-router'
 import { NDivider, NForm, NFormItem } from 'naive-ui'
 import grpcClient from '@/grpc-client'
 import { gen_grpc } from '@/gen_grpc/api'
-import {setAccessToken} from '@/utils/auth'
+import {delAccessToken, setAccessToken} from '@/utils/auth'
 import { palyMusic } from '@/utils/talk'
-import { useUserStore } from '@/store'
+import {relationReqStore, useDialogueStore, useEntityInfoStore, useTalkStore, useUserStore} from '@/store'
 import {calPassHash} from "@/utils/util_ts";
 import {startNewConnect} from "@/connect";
+import {storage} from "@/utils/storage";
 const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
@@ -36,6 +37,14 @@ const onLogin = () => {
   const redirect: any = route.params?.redirect || '/'
 
   model.loading = true
+
+  useUserStore().$reset()
+  useDialogueStore().$reset()
+  useTalkStore().$reset()
+  relationReqStore().$reset()
+  useEntityInfoStore().$reset()
+  storage.remove('user_info')
+  delAccessToken()
 
   grpcClient.sessUserLogin(model.username, calPassHash(model.password))
       .then((res: gen_grpc.SessUserLoginRes) => {
@@ -72,11 +81,11 @@ const onValidate = (e: Event) => {
 
 const onClickAccount = (type: number) => {
   if (type == 1) {
-    model.username = '18798272054'
-    model.password = 'admin123'
+    model.username = 'ceshi1'
+    model.password = 'ceshi1234'
   } else {
-    model.username = '18798272055'
-    model.password = 'admin123'
+    model.username = 'ceshi2'
+    model.password = 'ceshi1234'
   }
 
   onLogin()
@@ -128,6 +137,13 @@ const onClickAccount = (type: number) => {
       </div>
     </main>
     <footer class="el-footer" style="height: 90px">
+      <n-divider style="height: 30px; margin: 0">
+        <span style="color: #ccc; font-weight: 300"> 预览账号</span>
+      </n-divider>
+      <div class="preview-account">
+        <p @click="onClickAccount(1)">预览账号:ceshi1 / 密码: ceshi1234</p>
+        <p @click="onClickAccount(2)">预览账号:ceshi2 / 密码: ceshi1234</p>
+      </div>
     </footer>
   </section>
 </template>

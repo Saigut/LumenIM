@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { reactive, computed, watch, ref } from 'vue'
 import { NEmpty, NPopover, NPopconfirm } from 'naive-ui'
-import {useEntityInfoStore, UserInfo, useUserStore} from '@/store'
+import {useDialogueStore, useEntityInfoStore, UserInfo, useTalkStore, useUserStore} from '@/store'
 import GroupLaunch from './GroupLaunch.vue'
 import GroupManage from './manage/index.vue'
 import { Comment, Search, Close, Plus } from '@icon-park/vue-next'
@@ -16,6 +16,8 @@ import grpcClient from "@/grpc-client";
 import {gen_grpc} from "@/gen_grpc/api";
 
 const userStore = useUserStore()
+const dialogueStore = useDialogueStore()
+const talkStore = useTalkStore()
 const { showUserInfoModal } = useInject()
 
 const emit = defineEmits(['close', 'to-talk'])
@@ -139,17 +141,39 @@ const onClose = () => {
   emit('close')
 }
 
+const onDeleteTalk = (index_name = '') => {
+  talkStore.delItem(index_name)
+  dialogueStore.delItem(index_name);
+  dialogueStore.resetCurrentIndexName();
+  // index_name === indexName.value && dialogueStore.$reset()
+}
+
 const onSignOut = () => {
-  ServeSecedeGroup({
-    group_id: props.gid
-  }).then((res) => {
-    if (res.code == 200) {
-      window['$message'].success('已退出群聊')
-      onClose()
-    } else {
-      window['$message'].error(res.message)
-    }
-  })
+  grpcClient.umGroupLeave(props.gid)
+      .then((res: gen_grpc.UmGroupLeaveRes) => {
+        if (res.errCode === gen_grpc.ErrCode.emErrCode_Ok) {
+          window['$message'].success('已退出群聊')
+          onClose()
+          onDeleteTalk('2_' + props.gid?.toString())
+        } else {
+          window['$message'].error("操作失败：", gen_grpc.ErrCode[res.errCode])
+        }
+      })
+      .catch((err) => {
+        window['$message'].error("请求失败", err)
+        throw err
+      })
+
+  // ServeSecedeGroup({
+  //   group_id: props.gid
+  // }).then((res) => {
+  //   if (res.code == 200) {
+  //     window['$message'].success('已退出群聊')
+  //     onClose()
+  //   } else {
+  //     window['$message'].error(res.message)
+  //   }
+  // })
 }
 
 const onChangeRemark = () => {

@@ -1,5 +1,6 @@
 import {getAccessToken, getLocalSeqId} from "@/utils/auth";
 import { gen_grpc } from '@/gen_grpc/api'
+import {useRouter} from "vue-router";
 
 // Initialize the client with the hostname of your gRPC server
 let grpcClientInstance: gen_grpc.GrpcApiClient | null = null;
@@ -39,6 +40,7 @@ const realChatSendMsg = async (isGroupMsg, receiverId, msgStr, randMsgId) => {
         if (!accessToken) {
             console.error("Invalid access token");
             window['$message'].warning('无效的访问令牌');
+            useRouter().push('/auth/login')
             return;
         }
         request.sessId = accessToken;
